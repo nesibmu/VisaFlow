@@ -1,5 +1,7 @@
 from pathlib import Path
+
 from visaflow.ingestion.loaders import detect_document_type, split_sections, load_document
+from visaflow.schemas import Document
 
 
 def test_detect_document_type_email():
@@ -20,5 +22,6 @@ def test_split_sections():
 
 def test_load_document():
     doc = load_document(Path("data/samples/housing_checklist.txt"))
-    assert doc["document_type"] == "instruction"
-    assert len(doc["sections"]) >= 2
+    assert isinstance(doc, Document)
+    assert doc.document_type == "instruction"
+    assert len(doc.sections) >= 2

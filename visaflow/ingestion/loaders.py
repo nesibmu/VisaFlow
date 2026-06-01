@@ -1,6 +1,8 @@
 from pathlib import Path
-from typing import List, Dict
+from typing import List
 import re
+
+from visaflow.schemas import Document
 
 
 def normalize_text(text: str) -> str:
@@ -30,17 +32,17 @@ def load_text_file(path: Path, normalize: bool = True) -> str:
     return normalize_text(text) if normalize else text
 
 
-def load_document(path: Path) -> Dict[str, object]:
+def load_document(path: Path) -> Document:
     text = load_text_file(path)
-    return {
-        "path": str(path),
-        "document_type": detect_document_type(text),
-        "text": text,
-        "sections": split_sections(text),
-    }
+    return Document(
+        path=str(path),
+        document_type=detect_document_type(text),
+        text=text,
+        sections=split_sections(text),
+    )
 
 
-def load_sample_documents(directory: Path) -> List[Dict[str, object]]:
+def load_sample_documents(directory: Path) -> List[Document]:
     documents = []
     for path in sorted(directory.glob("*.txt")):
         documents.append(load_document(path))
