@@ -1,6 +1,10 @@
 from visaflow.schemas import Plan, PlannedTask
 
 
+PRIORITY_ORDER = {"high": 0, "medium": 1, "low": 2}
+SOURCE_ORDER = {"deadline": 0, "requested_document": 1, "action_item": 2}
+
+
 def infer_priority(task_text: str, source: str) -> str:
     lowered = task_text.lower()
 
@@ -20,6 +24,30 @@ def infer_priority(task_text: str, source: str) -> str:
         return "low"
 
     return "medium"
+
+
+def deduplicate_tasks(tasks):
+    seen = set()
+    unique_tasks = []
+
+    for task in tasks:
+        key = (task.task.lower(), task.source)
+        if key not in seen:
+            seen.add(key)
+            unique_tasks.append(task)
+
+    return unique_tasks
+
+
+def sort_tasks(tasks):
+    return sorted(
+        tasks,
+        key=lambda task: (
+            PRIORITY_ORDER.get(task.priority, 99),
+            SOURCE_ORDER.get(task.source, 99),
+            task.task.lower(),
+        ),
+    )
 
 
 def build_task_plan(extracted: dict) -> Plan:
@@ -54,5 +82,8 @@ def build_task_plan(extracted: dict) -> Plan:
                 source="action_item",
             )
         )
+
+    tasks = deduplicate_tasks(tasks)
+    tasks = sort_tasks(tasks)
 
     return Plan(tasks=tasks)
