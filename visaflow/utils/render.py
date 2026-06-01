@@ -16,7 +16,11 @@ def render_result(source_text: str, extracted: dict, plan: Plan, response: str) 
 
     lines.append("=== Plan ===")
     if plan.tasks:
+        current_workflow = None
         for task in plan.tasks:
+            if task.workflow_type != current_workflow:
+                current_workflow = task.workflow_type
+                lines.append(f"[{current_workflow}]")
             suffix = ""
             if task.depends_on:
                 suffix = f" -> depends on: {task.depends_on}"

@@ -3,6 +3,20 @@ from visaflow.schemas import Plan, PlannedTask
 
 PRIORITY_ORDER = {"high": 0, "medium": 1, "low": 2}
 SOURCE_ORDER = {"deadline": 0, "requested_document": 1, "action_item": 2}
+WORKFLOW_ORDER = {"housing": 0, "financial_aid": 1, "immigration": 2, "general": 3}
+
+
+def infer_workflow_type(text: str) -> str:
+    lowered = text.lower()
+
+    if any(word in lowered for word in ["housing", "contract", "housing portal", "room assignment"]):
+        return "housing"
+    if any(word in lowered for word in ["financial aid", "bank statement", "statement of support"]):
+        return "financial_aid"
+    if any(word in lowered for word in ["passport", "i-20", "visa", "immigration"]):
+        return "immigration"
+
+    return "general"
 
 
 def infer_priority(task_text: str, source: str) -> str:
@@ -31,7 +45,7 @@ def deduplicate_tasks(tasks):
     unique_tasks = []
 
     for task in tasks:
-        key = (task.task.lower(), task.source)
+        key = (task.task.lower(), task.source, task.workflow_type)
         if key not in seen:
             seen.add(key)
             unique_tasks.append(task)
@@ -43,6 +57,7 @@ def sort_tasks(tasks):
     return sorted(
         tasks,
         key=lambda task: (
+            WORKFLOW_ORDER.get(task.workflow_type, 99),
             PRIORITY_ORDER.get(task.priority, 99),
             SOURCE_ORDER.get(task.source, 99),
             task.task.lower(),
@@ -53,10 +68,7 @@ def sort_tasks(tasks):
 def infer_dependencies(action_text: str, document_tasks):
     lowered = action_text.lower()
 
-    if any(word in lowered for word in ["confirm", "reply", "respond"]):
-        return [task.task for task in document_tasks]
-
-    if "upload" in lowered:
+    if any(word in lowered for word in ["confirm", "reply", "respond", "upload"]):
         return [task.task for task in document_tasks]
 
     return []
@@ -73,26 +85,31 @@ def build_task_plan(extracted: dict) -> Plan:
                 task=task_text,
                 priority=infer_priority(task_text, "deadline"),
                 source="deadline",
+                workflow_type="general",
             )
         )
 
     for document in extracted.get("requested_documents", []):
         task_text = f"Prepare document: {document}"
+        workflow_type = infer_workflow_type(document)
         planned = PlannedTask(
             task=task_text,
             priority=infer_priority(task_text, "requested_document"),
             source="requested_document",
+            workflow_type=workflow_type,
         )
         tasks.append(planned)
         document_tasks.append(planned)
 
     for action in extracted.get("action_items", []):
         task_text = f"Complete action: {action}"
+        workflow_type = infer_workflow_type(action)
         tasks.append(
             PlannedTask(
                 task=task_text,
                 priority=infer_priority(action, "action_item"),
                 source="action_item",
+                workflow_type=workflow_type,
                 depends_on=infer_dependencies(action, document_tasks),
             )
         )
