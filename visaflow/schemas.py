@@ -8,3 +8,15 @@ class Document:
     document_type: str
     text: str
     sections: List[str] = field(default_factory=list)
+
+
+@dataclass
+class PlannedTask:
+    task: str
+    priority: str = "medium"
+    source: str = ""
+
+
+@dataclass
+class Plan:
+    tasks: List[PlannedTask] = field(default_factory=list)

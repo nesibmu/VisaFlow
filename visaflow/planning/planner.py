@@ -1,39 +1,34 @@
 from visaflow.schemas import Plan, PlannedTask
 
 
-PRIORITY_ORDER = {"high": 0, "medium": 1, "low": 2}
+def build_task_plan(extracted: dict) -> Plan:
+    tasks = []
 
-
-
-def build_plan(extraction) -> Plan:
-    tasks: list[PlannedTask] = []
-
-    for deadline in extraction.deadlines:
+    for deadline in extracted.get("deadlines", []):
         tasks.append(
             PlannedTask(
-                title=f"Track deadline: {deadline.text}",
+                task=f"Track deadline: {deadline}",
                 priority="high",
-                rationale=f"A deadline was detected in the source text. Normalized date: {deadline.normalized or 'unknown'}."
+                source="deadline",
             )
         )
 
-    for document in extraction.documents:
+    for document in extracted.get("requested_documents", []):
         tasks.append(
             PlannedTask(
-                title=f"Prepare document: {document.name}",
+                task=f"Prepare document: {document}",
                 priority="high",
-                rationale="This document appears to be requested in the workflow materials."
+                source="requested_document",
             )
         )
 
-    for item in extraction.action_items:
+    for action in extracted.get("action_items", []):
         tasks.append(
             PlannedTask(
-                title=item.description,
-                priority=item.priority,
-                rationale="This sentence was identified as a likely required action."
+                task=f"Complete action: {action}",
+                priority="medium",
+                source="action_item",
             )
         )
 
-    tasks.sort(key=lambda task: (PRIORITY_ORDER.get(task.priority, 3), task.title.lower()))
     return Plan(tasks=tasks)
