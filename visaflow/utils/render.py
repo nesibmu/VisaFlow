@@ -1,4 +1,5 @@
 from visaflow.schemas import Plan
+from visaflow.drafting.drafter import generate_next_step_summary
 
 
 def render_result(source_text: str, extracted: dict, plan: Plan, response: str) -> str:
@@ -27,6 +28,10 @@ def render_result(source_text: str, extracted: dict, plan: Plan, response: str) 
             lines.append(f"- {task.task} [{task.priority}]{suffix}")
     else:
         lines.append("No tasks generated.")
+    lines.append("")
+
+    lines.append("=== Next-Step Summary ===")
+    lines.append(generate_next_step_summary(plan))
     lines.append("")
 
     lines.append("=== Draft Response ===")
