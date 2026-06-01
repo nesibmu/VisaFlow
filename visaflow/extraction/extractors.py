@@ -17,6 +17,11 @@ RELATIVE_DEADLINE_PATTERNS = [
 ]
 
 
+def split_sentences(text: str) -> List[str]:
+    parts = re.split(r"(?<=[\.\?\!])\s+|\n+", text)
+    return [part.strip() for part in parts if part.strip()]
+
+
 def extract_deadlines(text: str) -> List[str]:
     deadlines = []
 
@@ -107,9 +112,30 @@ def extract_action_items(text: str) -> List[str]:
     return ordered
 
 
-def extract_information(text: str) -> Dict[str, List[str]]:
-    return {
+def build_evidence_map(text: str, extracted: Dict[str, List[str]]) -> Dict[str, Dict[str, str]]:
+    sentences = split_sentences(text)
+    evidence = {
+        "deadlines": {},
+        "requested_documents": {},
+        "action_items": {},
+    }
+
+    for category, items in extracted.items():
+        for item in items:
+            item_lower = item.lower()
+            for sentence in sentences:
+                if item_lower in sentence.lower():
+                    evidence[category][item] = sentence
+                    break
+
+    return evidence
+
+
+def extract_information(text: str) -> Dict[str, object]:
+    extracted = {
         "deadlines": extract_deadlines(text),
         "requested_documents": extract_requested_documents(text),
         "action_items": extract_action_items(text),
     }
+    extracted["evidence"] = build_evidence_map(text, extracted)
+    return extracted

@@ -15,6 +15,17 @@ def render_result(source_text: str, extracted: dict, plan: Plan, response: str) 
     lines.append(f"Action items: {extracted.get('action_items', [])}")
     lines.append("")
 
+    evidence = extracted.get("evidence", {})
+    if evidence:
+        lines.append("=== Evidence ===")
+        for category in ["deadlines", "requested_documents", "action_items"]:
+            category_evidence = evidence.get(category, {})
+            if category_evidence:
+                lines.append(f"{category}:")
+                for item, snippet in category_evidence.items():
+                    lines.append(f"- {item} -> {snippet}")
+        lines.append("")
+
     lines.append("=== Plan ===")
     if plan.tasks:
         current_workflow = None
