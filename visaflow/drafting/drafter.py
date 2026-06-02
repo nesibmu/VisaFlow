@@ -74,7 +74,7 @@ def generate_next_step_summary(plan: Plan) -> str:
             lines.append(f"- {task}")
         deadline_tasks = [task.task for task in urgent if "deadline" in task.task.lower()]
         if len(deadline_tasks) > 1:
-            lines.append("- Multiple deadlines were detected, so the earliest one should be handled first.")
+            lines.append("- Multiple deadlines were detected, so the earliest deadline should be handled first.")
         lines.append("")
 
     if ready:
@@ -107,6 +107,65 @@ def generate_action_checklist(plan: Plan) -> str:
     for task in plan.tasks:
         label = task.status.upper()
         lines.append(f"[ ] {task.task}  |  {label}")
+
+    return "\n".join(lines)
+
+
+def generate_task_digest(plan: Plan, extracted: dict) -> str:
+    deadlines = extracted.get("deadlines", [])
+    urgent = [task for task in plan.tasks if task.status == "urgent"]
+    ready = [task for task in plan.tasks if task.status == "ready"]
+    blocked = [task for task in plan.tasks if task.status == "blocked"]
+
+    if not plan.tasks:
+        return (
+            "Task digest\n\n"
+            "No concrete tasks were detected from this message.\n\n"
+            "Suggested next step:\n"
+            "- Ask the sender to clarify what action is needed, what documents are required, and whether there is a deadline."
+        )
+
+    lines = []
+    lines.append("Task digest")
+    lines.append("")
+    lines.append(generate_recommended_next_action(plan))
+    lines.append("")
+
+    lines.append("Immediate focus")
+    if urgent:
+        for task in urgent[:3]:
+            lines.append(f"- {task.task}")
+    elif ready:
+        lines.append(f"- {ready[0].task}")
+    else:
+        lines.append("- Resolve blocked items first.")
+    lines.append("")
+
+    lines.append("Ready tasks")
+    if ready:
+        for task in ready[:5]:
+            lines.append(f"- [{task.workflow_type}] {task.task} — urgency {task.urgency_score}")
+    else:
+        lines.append("- None detected.")
+    lines.append("")
+
+    lines.append("Blocked tasks")
+    if blocked:
+        for task in blocked[:4]:
+            line = f"- {task.task}"
+            if getattr(task, "blocking_reason", ""):
+                line += f" — {task.blocking_reason}"
+            lines.append(line)
+    else:
+        lines.append("- None detected.")
+    lines.append("")
+
+    lines.append("Deadlines")
+    if deadlines:
+        for deadline in deadlines:
+            lines.append(f"- {deadline}")
+    else:
+        lines.append("- No explicit deadline detected.")
 
     return "\n".join(lines)
 
@@ -301,81 +360,3 @@ def draft_response_with_mode(plan: Plan, enhanced: bool = False) -> str:
     if enhanced:
         return draft_response_enhanced(plan)
     return draft_response(plan)
-
-def generate_task_digest(tasks, extraction_result=None):
-    if not tasks:
-        return (
-            "Task Digest\n\n"
-            "No concrete tasks were detected from this message.\n\n"
-            "Suggested next step:\n"
-            "- Ask the sender to clarify what action is needed, what documents are required, and whether there is a deadline."
-        )
-
-    urgent_tasks = []
-    ready_tasks = []
-    blocked_tasks = []
-
-    for task in tasks:
-        status = getattr(task, "status", "") or ""
-        priority = getattr(task, "priority", "") or ""
-
-        if status.lower() == "blocked":
-            blocked_tasks.append(task)
-        elif priority.lower() == "urgent" or status.lower() == "urgent":
-            urgent_tasks.append(task)
-        else:
-            ready_tasks.append(task)
-
-    lines = ["Task Digest", ""]
-
-    lines.append("Immediate focus")
-    if urgent_tasks:
-        for task in urgent_tasks:
-            lines.append(f"- {getattr(task, 'task', str(task))}")
-    elif ready_tasks:
-        lines.append(f"- {getattr(ready_tasks[0], 'task', str(ready_tasks[0]))}")
-    else:
-        lines.append("- Resolve the blocked items before work can move forward.")
-    lines.append("")
-
-    lines.append("Ready tasks")
-    if ready_tasks:
-        for task in ready_tasks:
-            workflow = getattr(task, "workflow_type", "general")
-            urgency = getattr(task, "urgency_score", None)
-            if urgency is not None:
-                lines.append(f"- [{workflow}] {getattr(task, 'task', str(task))} — urgency {urgency}")
-            else:
-                lines.append(f"- [{workflow}] {getattr(task, 'task', str(task))}")
-    else:
-        lines.append("- None detected.")
-    lines.append("")
-
-    lines.append("Blocked tasks")
-    if blocked_tasks:
-        for task in blocked_tasks:
-            reason = getattr(task, "blocking_reason", None)
-            task_line = f"- {getattr(task, 'task', str(task))}"
-            if reason:
-                task_line += f" — blocked because {reason}"
-            lines.append(task_line)
-    else:
-        lines.append("- None detected.")
-    lines.append("")
-
-    deadlines = []
-    if extraction_result is not None:
-        deadlines = getattr(extraction_result, "deadlines", []) or []
-
-    lines.append("Deadlines")
-    if deadlines:
-        for deadline in deadlines:
-            lines.append(f"- {deadline}")
-    else:
-        lines.append("- No explicit deadline detected.")
-    lines.append("")
-
-    lines.append("Operational note")
-    lines.append("- Use this digest for quick execution. Use the longer operations handoff when someone needs context.")
-
-    return "\n".join(lines)

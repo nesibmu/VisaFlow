@@ -122,6 +122,7 @@ task_digest = generate_task_digest(tasks, extraction_result)
         "recommended_next_action": recommended_next_action,
         "checklist": checklist,
         "ops_handoff": ops_handoff,
+        "task_digest": task_digest,
         "email_ready_reply": email_ready_reply,
         "baseline_draft": baseline_draft,
         "enhanced_draft": enhanced_draft,
@@ -600,6 +601,7 @@ elif results is not None:
     recommended_next_action = results["recommended_next_action"]
     checklist = results["checklist"]
     ops_handoff = results["ops_handoff"]
+    task_digest = results["task_digest"]
     email_ready_reply = results["email_ready_reply"]
     baseline_draft = results["baseline_draft"]
     enhanced_draft = results["enhanced_draft"]
@@ -876,7 +878,7 @@ elif results is not None:
                     key="download_enhanced",
                 )
 
-            with tab4:
+            with tab5:
                 checklist_text = st.text_area("Checklist", checklist, height=320)
                 st.download_button(
                     label="Download checklist",
@@ -887,7 +889,7 @@ elif results is not None:
                     key="download_checklist",
                 )
 
-            with tab5:
+            with tab6:
                 ops_text = st.text_area("Operations Handoff", ops_handoff, height=320)
                 st.download_button(
                     label="Download ops handoff",
