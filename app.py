@@ -324,6 +324,31 @@ def assess_input_quality(source_text: str, extracted: dict, plan) -> str:
     return "good"
 
 
+def compute_case_confidence(extracted: dict, plan) -> tuple:
+    confidence_map = extracted.get("confidence", {})
+    all_scores = []
+
+    for category in ["deadlines", "requested_documents", "action_items"]:
+        all_scores.extend(confidence_map.get(category, {}).values())
+
+    signal_count = (
+        len(extracted.get("deadlines", []))
+        + len(extracted.get("requested_documents", []))
+        + len(extracted.get("action_items", []))
+    )
+
+    if not all_scores or len(plan.tasks) == 0:
+        return ("low", 0.35)
+
+    avg_score = sum(all_scores) / len(all_scores)
+
+    if signal_count >= 5 and avg_score >= 0.82:
+        return ("high", avg_score)
+    if signal_count >= 2 and avg_score >= 0.70:
+        return ("medium", avg_score)
+    return ("low", avg_score)
+
+
 st.set_page_config(page_title="VisaFlow", layout="wide")
 
 st.markdown(
@@ -563,6 +588,8 @@ elif results is not None:
     confidence = extracted.get("confidence", {})
 
     quality = assess_input_quality(source_text, extracted, plan)
+    case_confidence_label, case_confidence_score = compute_case_confidence(extracted, plan)
+
     if quality == "very_low":
         st.warning("This input is very short. The app may not have enough information to build a strong workflow.")
     elif quality == "low":
@@ -581,6 +608,16 @@ elif results is not None:
 <div style="border:1px solid #dbeafe;border-radius:14px;padding:14px 16px;background:#eff6ff;margin-bottom:14px;">
   <div style="font-size:12px;color:#1d4ed8;margin-bottom:6px;">Next best action</div>
   <div style="font-size:16px;font-weight:700;color:#1e3a8a;">{recommended_next_action}</div>
+</div>
+""",
+        unsafe_allow_html=True,
+    )
+
+    st.markdown(
+        f"""
+<div style="border:1px solid #e5e7eb;border-radius:14px;padding:14px 16px;background:#ffffff;margin-bottom:14px;">
+  <div style="font-size:12px;color:#6b7280;margin-bottom:6px;">System confidence</div>
+  <div style="font-size:16px;font-weight:700;color:#111827;">{case_confidence_label} ({case_confidence_score:.2f})</div>
 </div>
 """,
         unsafe_allow_html=True,
