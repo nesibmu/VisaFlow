@@ -112,6 +112,16 @@ def is_due_soon(date_text: str, days_threshold: int = 7) -> bool:
     return 0 <= delta <= days_threshold
 
 
+def sort_deadlines(deadlines):
+    def deadline_key(date_text):
+        parsed = parse_deadline(date_text)
+        if parsed is None:
+            return datetime.max
+        return parsed
+
+    return sorted(deadlines, key=deadline_key)
+
+
 def infer_status(source: str, priority: str, depends_on):
     if source == "deadline":
         return "urgent"
@@ -245,8 +255,12 @@ def build_task_plan(extracted: dict) -> Plan:
     tasks = []
     document_tasks = []
 
-    for deadline in extracted.get("deadlines", []):
+    ordered_deadlines = sort_deadlines(extracted.get("deadlines", []))
+
+    for idx, deadline in enumerate(ordered_deadlines):
         label = f"Track deadline: {deadline}"
+        if idx == 0 and len(ordered_deadlines) > 1:
+            label += " [earliest]"
         if is_due_soon(deadline):
             label += " [due soon]"
         priority = infer_priority(label, "deadline")

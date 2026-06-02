@@ -72,6 +72,9 @@ def generate_next_step_summary(plan: Plan) -> str:
         lines.append("Immediate priorities:")
         for task in _top_tasks(urgent, limit=3):
             lines.append(f"- {task}")
+        deadline_tasks = [task.task for task in urgent if "deadline" in task.task.lower()]
+        if len(deadline_tasks) > 1:
+            lines.append("- Multiple deadlines were detected, so the earliest one should be handled first.")
         lines.append("")
 
     if ready:
