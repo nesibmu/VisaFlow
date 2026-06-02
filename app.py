@@ -79,7 +79,7 @@ Please upload all materials through the student portal by June 10, 2026. You sho
 
 Best,
 Student Services and Financial Support""",
-        "description": "Shows a denser multi-deadline case with multiple requested documents and follow-up actions.",
+        "description": "Shows a denser case with multiple deadlines, document requests, and follow-up actions.",
     },
     "Weak noisy case": {
         "text": """Subject: quick follow up
@@ -93,7 +93,7 @@ thanks""",
 
 DEMO_SCRIPT = [
     "Start with Mixed admin case to show the strongest clean end-to-end example.",
-    "Use Escalated admin case to show denser multi-deadline handling.",
+    "Use Escalated admin case to show heavier multi-deadline handling.",
     "Use Housing follow-up or Financial aid review if you want a simpler single-theme example.",
     "Use Immigration update to highlight workflow tagging.",
     "Use Weak noisy case to show graceful behavior on incomplete input.",
