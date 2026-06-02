@@ -460,6 +460,20 @@ if show_demo_script and not minimal_view:
         for name, preset in DEMO_PRESETS.items():
             st.write(f"- **{name}**: {preset['description']}")
 
+st.subheader("Preset Notes")
+
+if not comparison_mode and input_mode == "Demo preset" and selected_preset:
+    st.markdown(
+        f"""
+<div style="border:1px solid #e5e7eb;border-radius:14px;padding:14px 16px;background:#ffffff;margin-bottom:16px;">
+  <div style="font-size:12px;color:#6b7280;margin-bottom:6px;">Selected preset</div>
+  <div style="font-size:16px;font-weight:700;margin-bottom:8px;">{selected_preset}</div>
+  <div style="font-size:13px;color:#4b5563;">{PRESET_NOTES.get(selected_preset, "")}</div>
+</div>
+""",
+        unsafe_allow_html=True,
+    )
+
 st.subheader("Quick Launch")
 q1, q2, q3, q4, q5, q6 = st.columns(6)
 preset_names = [
