@@ -31,6 +31,16 @@ FINAL_DEMO_CHECKLIST = [
     "End with Weak noisy case to show fallback handling.",
 ]
 
+
+PRESET_NOTES = {
+    "Mixed admin case": "Best default demo. Shows cross-workflow extraction, planning, and output generation in one run.",
+    "Escalated admin case": "Best dense case. Shows multiple deadlines, heavier document load, and stronger urgency signals.",
+    "Housing follow-up": "Best simple case. Good for a clean first walkthrough.",
+    "Financial aid review": "Best sentence-based extraction case. Good for showing document requests from natural email text.",
+    "Immigration update": "Best workflow-tagging case. Good for showing immigration-specific handling.",
+    "Weak noisy case": "Best robustness case. Good for showing fallback behavior on incomplete input.",
+}
+
 DEFAULT_PRESET = "Mixed admin case"
 
 DEMO_PRESETS = {
