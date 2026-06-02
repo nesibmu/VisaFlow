@@ -19,6 +19,7 @@ class PlannedTask:
     status: str = "ready"
     depends_on: List[str] = field(default_factory=list)
     blocking_reason: str = ""
+    urgency_score: int = 0
 
 
 @dataclass

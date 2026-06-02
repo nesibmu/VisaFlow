@@ -133,6 +133,38 @@ def summarize_dependencies(depends_on):
     return f"Waiting on {len(depends_on)} earlier steps, including {depends_on[0]}"
 
 
+def compute_urgency_score(task_text: str, source: str, status: str, depends_on):
+    lowered = task_text.lower()
+    score = 0
+
+    if status == "urgent":
+        score += 100
+    elif status == "ready":
+        score += 60
+    elif status == "blocked":
+        score += 20
+
+    if "[due soon]" in lowered:
+        score += 40
+
+    if source == "deadline":
+        score += 25
+
+    if any(term in lowered for term in ["passport", "i-20", "bank statement", "statement of support"]):
+        score += 15
+
+    if any(term in lowered for term in ["reply", "respond", "confirm", "as soon as possible"]):
+        score += 10
+
+    if source == "action_item" and ("upload" in lowered or "submit" in lowered):
+        score += 8
+
+    if depends_on:
+        score -= min(10, len(depends_on))
+
+    return score
+
+
 def deduplicate_tasks(tasks):
     seen = set()
     unique_tasks = []
@@ -152,6 +184,7 @@ def sort_tasks(tasks):
         tasks,
         key=lambda task: (
             status_order.get(task.status, 99),
+            -task.urgency_score,
             WORKFLOW_ORDER.get(task.workflow_type, 99),
             PRIORITY_ORDER.get(task.priority, 99),
             SOURCE_ORDER.get(task.source, 99),
@@ -173,14 +206,17 @@ def build_upload_packet_task(document_tasks):
     workflow_type = dominant if workflow_counts[dominant] > 0 else "general"
 
     depends_on = [task.task for task in document_tasks]
+    status = "blocked"
+    task_text = "Compile and upload requested document packet"
     return PlannedTask(
-        task="Compile and upload requested document packet",
+        task=task_text,
         priority="high",
         source="action_item",
         workflow_type=workflow_type,
-        status="blocked",
+        status=status,
         depends_on=depends_on,
         blocking_reason=summarize_dependencies(depends_on),
+        urgency_score=compute_urgency_score(task_text, "action_item", status, depends_on),
     )
 
 
@@ -214,14 +250,16 @@ def build_task_plan(extracted: dict) -> Plan:
         if is_due_soon(deadline):
             label += " [due soon]"
         priority = infer_priority(label, "deadline")
+        status = infer_status("deadline", priority, [])
         tasks.append(
             PlannedTask(
                 task=label,
                 priority=priority,
                 source="deadline",
                 workflow_type="general",
-                status=infer_status("deadline", priority, []),
+                status=status,
                 blocking_reason="",
+                urgency_score=compute_urgency_score(label, "deadline", status, []),
             )
         )
 
@@ -229,13 +267,15 @@ def build_task_plan(extracted: dict) -> Plan:
         task_text = f"Prepare document: {document}"
         workflow_type = infer_workflow_type(document)
         priority = infer_priority(task_text, "requested_document")
+        status = infer_status("requested_document", priority, [])
         planned = PlannedTask(
             task=task_text,
             priority=priority,
             source="requested_document",
             workflow_type=workflow_type,
-            status=infer_status("requested_document", priority, []),
+            status=status,
             blocking_reason="",
+            urgency_score=compute_urgency_score(task_text, "requested_document", status, []),
         )
         tasks.append(planned)
         document_tasks.append(planned)
@@ -249,6 +289,7 @@ def build_task_plan(extracted: dict) -> Plan:
         workflow_type = infer_workflow_type_with_context(action, document_tasks=document_tasks)
         depends_on = infer_dependencies(action, document_tasks, upload_packet_task)
         priority = infer_priority(task_text, "action_item")
+        status = infer_status("action_item", priority, depends_on)
         tasks.append(
             PlannedTask(
                 task=task_text,
@@ -256,8 +297,9 @@ def build_task_plan(extracted: dict) -> Plan:
                 source="action_item",
                 workflow_type=workflow_type,
                 depends_on=depends_on,
-                status=infer_status("action_item", priority, depends_on),
+                status=status,
                 blocking_reason=summarize_dependencies(depends_on),
+                urgency_score=compute_urgency_score(task_text, "action_item", status, depends_on),
             )
         )
 

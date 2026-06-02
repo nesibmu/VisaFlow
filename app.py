@@ -218,7 +218,7 @@ def render_task_card(task):
     <div>{status_badge(task.status)}</div>
   </div>
   <div style="margin-top:8px;font-size:12px;color:#6b7280;">
-    workflow: {task.workflow_type} • source: {task.source} • priority: {task.priority}
+    workflow: {task.workflow_type} • source: {task.source} • priority: {task.priority} • urgency: {task.urgency_score}
   </div>
   {depends}
   {blocking}
