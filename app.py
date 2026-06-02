@@ -20,6 +20,17 @@ BEST_COMPARISON_GUIDE = {
     "reason": "This pairing shows the clearest contrast between strong structured extraction and graceful fallback handling."
 }
 
+
+FINAL_DEMO_CHECKLIST = [
+    "Start in presenter mode.",
+    "Open Mixed admin case first.",
+    "Show the next best action and the overall system confidence.",
+    "Open Task Digest and Email-Ready Reply outputs.",
+    "Switch to Escalated admin case to show multiple deadlines.",
+    "Use comparison mode to contrast strong and weak cases.",
+    "End with Weak noisy case to show fallback handling.",
+]
+
 DEFAULT_PRESET = "Mixed admin case"
 
 DEMO_PRESETS = {
