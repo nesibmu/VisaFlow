@@ -13,6 +13,13 @@ from visaflow.drafting.drafter import (
 )
 
 
+
+BEST_COMPARISON_GUIDE = {
+    "left": "Mixed admin case",
+    "right": "Weak noisy case",
+    "reason": "This pairing shows the clearest contrast between strong structured extraction and graceful fallback handling."
+}
+
 DEFAULT_PRESET = "Mixed admin case"
 
 DEMO_PRESETS = {
