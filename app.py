@@ -103,29 +103,51 @@ def confidence_label(score: float) -> str:
     return "low"
 
 
-def render_extraction_card(title: str, items, confidence_map, evidence_map):
-    st.markdown(f"### {title}")
+def confidence_chip(score: float) -> str:
+    label = confidence_label(score)
+    colors = {
+        "high": ("#dcfce7", "#166534"),
+        "medium": ("#fef3c7", "#92400e"),
+        "low": ("#fee2e2", "#991b1b"),
+    }
+    bg, fg = colors[label]
+    return f"<span style='background:{bg};color:{fg};padding:4px 8px;border-radius:999px;font-size:12px;font-weight:600;'>{label} ({score:.2f})</span>"
+
+
+def render_compact_findings(title: str, items, confidence_map):
+    st.markdown(f"#### {title}")
     if not items:
-        st.caption(f"No {title.lower()} found.")
+        st.caption("None found.")
         return
 
     for item in items:
         score = confidence_map.get(item, 0.0)
-        label = confidence_label(score)
-        evidence = evidence_map.get(item, "")
-
         st.markdown(
             f"""
-<div style="border:1px solid #e5e7eb;border-radius:14px;padding:14px 16px;margin-bottom:10px;background:white;">
-  <div style="display:flex;justify-content:space-between;align-items:center;gap:12px;">
-    <div style="font-weight:600;font-size:15px;">{item}</div>
-    <div style="font-size:12px;padding:4px 8px;border-radius:999px;background:#f3f4f6;">
-      confidence: {label} ({score:.2f})
-    </div>
+<div style="border:1px solid #e5e7eb;border-radius:12px;padding:12px 14px;margin-bottom:8px;background:white;">
+  <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;">
+    <div style="font-weight:600;font-size:14px;">{item}</div>
+    <div>{confidence_chip(score)}</div>
   </div>
-  <div style="margin-top:8px;font-size:13px;color:#6b7280;">
-    {evidence if evidence else "No supporting snippet found."}
-  </div>
+</div>
+""",
+            unsafe_allow_html=True,
+        )
+
+
+def render_evidence_panel(title: str, items, evidence_map):
+    st.markdown(f"#### {title}")
+    if not items:
+        st.caption("No evidence to show.")
+        return
+
+    for item in items:
+        snippet = evidence_map.get(item, "No supporting snippet found.")
+        st.markdown(
+            f"""
+<div style="border:1px dashed #d1d5db;border-radius:12px;padding:12px 14px;margin-bottom:8px;background:#fafafa;">
+  <div style="font-size:13px;font-weight:600;margin-bottom:6px;">{item}</div>
+  <div style="font-size:13px;color:#6b7280;">{snippet}</div>
 </div>
 """,
             unsafe_allow_html=True,
@@ -163,7 +185,7 @@ st.markdown(
 .block-container {
     padding-top: 2rem;
     padding-bottom: 2rem;
-    max-width: 1200px;
+    max-width: 1250px;
 }
 div[data-testid="stMetric"] {
     background: #ffffff;
@@ -282,28 +304,25 @@ if run_pipeline:
 
         st.divider()
 
-        c1, c2, c3 = st.columns(3)
-        with c1:
-            render_extraction_card(
-                "Deadlines",
-                deadlines,
-                confidence.get("deadlines", {}),
-                evidence.get("deadlines", {}),
-            )
-        with c2:
-            render_extraction_card(
-                "Requested Documents",
-                documents,
-                confidence.get("requested_documents", {}),
-                evidence.get("requested_documents", {}),
-            )
-        with c3:
-            render_extraction_card(
-                "Action Items",
-                actions,
-                confidence.get("action_items", {}),
-                evidence.get("action_items", {}),
-            )
+        st.subheader("Extraction Dashboard")
+
+        d1, d2, d3 = st.columns(3)
+        with d1:
+            render_compact_findings("Deadlines", deadlines, confidence.get("deadlines", {}))
+        with d2:
+            render_compact_findings("Requested Documents", documents, confidence.get("requested_documents", {}))
+        with d3:
+            render_compact_findings("Action Items", actions, confidence.get("action_items", {}))
+
+        if not presenter_mode:
+            st.markdown("#### Evidence by Category")
+            e1, e2, e3 = st.columns(3)
+            with e1:
+                render_evidence_panel("Deadline Evidence", deadlines, evidence.get("deadlines", {}))
+            with e2:
+                render_evidence_panel("Document Evidence", documents, evidence.get("requested_documents", {}))
+            with e3:
+                render_evidence_panel("Action Evidence", actions, evidence.get("action_items", {}))
 
         st.divider()
 
