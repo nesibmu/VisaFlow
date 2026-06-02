@@ -498,6 +498,12 @@ with control_right:
     if st.button("Reset demo state", use_container_width=True):
         st.session_state.results = None
 
+if not minimal_view:
+    with st.expander("Final Demo Checklist", expanded=False):
+        st.markdown("### Recommended recording flow")
+        for i, step in enumerate(FINAL_DEMO_CHECKLIST, start=1):
+            st.write(f"{i}. {step}")
+
 if show_demo_script and not minimal_view:
     with st.expander("Demo guide", expanded=False):
         st.markdown("### Suggested flow")
