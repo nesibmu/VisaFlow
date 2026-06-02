@@ -108,6 +108,7 @@ def run_pipeline_from_text(text: str):
     recommended_next_action = generate_recommended_next_action(plan)
     checklist = generate_action_checklist(plan)
     ops_handoff = generate_ops_handoff(plan, extracted)
+    task_digest = generate_task_digest(plan, extracted)
     email_ready_reply = generate_email_ready_reply(plan)
     baseline_draft = draft_response_with_mode(plan, enhanced=False)
     enhanced_draft = draft_response_with_mode(plan, enhanced=True)
@@ -677,6 +678,18 @@ elif results is not None:
 
         st.divider()
         st.subheader("Outputs")
+
+    st.markdown("### Task Digest")
+    task_digest_text = st.text_area("Task Digest", task_digest, height=220)
+    st.download_button(
+        label="Download task digest",
+        data=task_digest_text,
+        file_name="visaflow_task_digest.txt",
+        mime="text/plain",
+        use_container_width=True,
+        key="download_task_digest",
+    )
+
         tab1, tab2, tab3 = st.tabs(["Enhanced Draft", "Checklist", "Operations Handoff"])
 
         with tab1:
@@ -806,6 +819,18 @@ elif results is not None:
 
         st.divider()
         st.subheader("Outputs")
+
+    st.markdown("### Task Digest")
+    task_digest_text = st.text_area("Task Digest", task_digest, height=220)
+    st.download_button(
+        label="Download task digest",
+        data=task_digest_text,
+        file_name="visaflow_task_digest.txt",
+        mime="text/plain",
+        use_container_width=True,
+        key="download_task_digest",
+    )
+
 
         if presenter_mode:
             tab1, tab2, tab3 = st.tabs(["Enhanced Draft", "Checklist", "Operations Handoff"])
