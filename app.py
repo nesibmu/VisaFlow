@@ -10,6 +10,7 @@ from visaflow.drafting.drafter import (
     generate_action_checklist,
     generate_recommended_next_action,
     generate_ops_handoff,
+    generate_task_digest,
 )
 
 
@@ -107,8 +108,10 @@ def run_pipeline_from_text(text: str):
     summary = generate_next_step_summary(plan)
     recommended_next_action = generate_recommended_next_action(plan)
     checklist = generate_action_checklist(plan)
-    ops_handoff = generate_ops_handoff(plan, extracted)
+    ops_handoff = generate_ops_handoff,
+    generate_task_digest(plan, extracted)
     email_ready_reply = generate_email_ready_reply(plan)
+task_digest = generate_task_digest(tasks, extraction_result)
     baseline_draft = draft_response_with_mode(plan, enhanced=False)
     enhanced_draft = draft_response_with_mode(plan, enhanced=True)
     return {
