@@ -485,7 +485,7 @@ if show_demo_script and not minimal_view:
         for name, preset in DEMO_PRESETS.items():
             st.write(f"- **{name}**: {preset['description']}")
 
-st.subheader("Preset Notes")
+st.subheader("Preset Notes and Usage")
 
 if not comparison_mode and input_mode == "Demo preset" and selected_preset:
     st.markdown(
@@ -676,7 +676,7 @@ elif results is not None:
             st.download_button(
                 label="Download ops handoff",
                 data=ops_text,
-                file_name="visaflow_ops_handoff.txt",
+                file_name="visaflow_operations_handoff.txt",
                 mime="text/plain",
                 use_container_width=True,
                 key="download_ops_handoff_minimal",
@@ -804,7 +804,7 @@ elif results is not None:
                 st.download_button(
                     label="Download ops handoff",
                     data=ops_text,
-                    file_name="visaflow_ops_handoff.txt",
+                    file_name="visaflow_operations_handoff.txt",
                     mime="text/plain",
                     use_container_width=True,
                     key="download_ops_handoff_presenter",
@@ -861,7 +861,7 @@ elif results is not None:
                 st.download_button(
                     label="Download ops handoff",
                     data=ops_text,
-                    file_name="visaflow_ops_handoff.txt",
+                    file_name="visaflow_operations_handoff.txt",
                     mime="text/plain",
                     use_container_width=True,
                     key="download_ops_handoff",
