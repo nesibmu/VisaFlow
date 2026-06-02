@@ -9,14 +9,28 @@ WORKFLOW_ORDER = {"housing": 0, "financial_aid": 1, "immigration": 2, "general":
 def infer_workflow_type(text: str) -> str:
     lowered = text.lower()
 
-    if any(word in lowered for word in ["housing", "contract", "housing portal", "room assignment", "housing agreement"]):
-        return "housing"
-    if any(word in lowered for word in ["financial aid", "bank statement", "statement of support"]):
-        return "financial_aid"
-    if any(word in lowered for word in ["passport", "i-20", "visa", "immigration"]):
-        return "immigration"
+    housing_terms = [
+        "housing", "room assignment", "housing agreement", "housing contract",
+        "contract request", "lease", "residential", "assignment"
+    ]
+    finance_terms = [
+        "financial aid", "bank statement", "statement of support",
+        "funding", "payment", "tuition", "billing", "finance"
+    ]
+    immigration_terms = [
+        "passport", "i-20", "visa", "immigration", "sevis", "travel signature"
+    ]
 
-    return "general"
+    scores = {
+        "housing": sum(term in lowered for term in housing_terms),
+        "financial_aid": sum(term in lowered for term in finance_terms),
+        "immigration": sum(term in lowered for term in immigration_terms),
+    }
+
+    best_workflow = max(scores, key=scores.get)
+    if scores[best_workflow] == 0:
+        return "general"
+    return best_workflow
 
 
 def infer_priority(task_text: str, source: str) -> str:
@@ -80,10 +94,22 @@ def sort_tasks(tasks):
 def infer_dependencies(action_text: str, document_tasks):
     lowered = action_text.lower()
 
-    if any(word in lowered for word in ["confirm", "reply", "respond", "upload"]):
-        return [task.task for task in document_tasks]
+    matching_dependencies = []
+    for task in document_tasks:
+        task_text = task.task.lower()
 
-    return []
+        if "confirm" in lowered or "reply" in lowered or "respond" in lowered:
+            matching_dependencies.append(task.task)
+            continue
+
+        if "upload" in lowered:
+            matching_dependencies.append(task.task)
+            continue
+
+        if task.workflow_type != "general" and task.workflow_type in lowered:
+            matching_dependencies.append(task.task)
+
+    return matching_dependencies
 
 
 def build_task_plan(extracted: dict) -> Plan:
