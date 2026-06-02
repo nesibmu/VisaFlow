@@ -133,7 +133,7 @@ def confidence_chip(score: float) -> str:
 def render_compact_findings(title: str, items, confidence_map):
     st.markdown(f"#### {title}")
     if not items:
-        st.caption("None found.")
+        st.caption(f"No {title.lower()} found.")
         return
 
     for item in items:
@@ -210,9 +210,28 @@ def render_comparison_column(title: str, result: dict):
     b.metric("Documents", len(documents))
     c.metric("Tasks", len(plan.tasks))
 
-    render_compact_findings("Deadlines", deadlines[:3], confidence.get("deadlines", {}))
-    render_compact_findings("Requested Documents", documents[:4], confidence.get("requested_documents", {}))
-    render_compact_findings("Action Items", actions[:3], confidence.get("action_items", {}))
+    if len(deadlines) + len(documents) + len(actions) == 0:
+        st.warning("This case produced very little structured signal.")
+    else:
+        render_compact_findings("Deadlines", deadlines[:3], confidence.get("deadlines", {}))
+        render_compact_findings("Requested Documents", documents[:4], confidence.get("requested_documents", {}))
+        render_compact_findings("Action Items", actions[:3], confidence.get("action_items", {}))
+
+
+def assess_input_quality(source_text: str, extracted: dict, plan) -> str:
+    signal_count = (
+        len(extracted.get("deadlines", []))
+        + len(extracted.get("requested_documents", []))
+        + len(extracted.get("action_items", []))
+    )
+
+    if len(source_text.split()) < 12:
+        return "very_low"
+    if signal_count == 0:
+        return "low"
+    if signal_count <= 2 and len(plan.tasks) <= 2:
+        return "medium"
+    return "good"
 
 
 st.set_page_config(page_title="VisaFlow", layout="wide")
@@ -416,6 +435,14 @@ elif results is not None:
     evidence = extracted.get("evidence", {})
     confidence = extracted.get("confidence", {})
 
+    quality = assess_input_quality(source_text, extracted, plan)
+    if quality == "very_low":
+        st.warning("This input is very short. The app may not have enough information to build a strong workflow.")
+    elif quality == "low":
+        st.warning("Only a small amount of structured information was found. Results may be incomplete.")
+    elif quality == "medium":
+        st.info("A partial workflow was detected. This is usable, but likely not a complete administrative request.")
+
     urgent_count = len([task for task in plan.tasks if task.status == "urgent"])
     ready_count = len([task for task in plan.tasks if task.status == "ready"])
     blocked_count = len([task for task in plan.tasks if task.status == "blocked"])
@@ -465,34 +492,38 @@ elif results is not None:
 
     st.subheader("Task Plan")
 
-    if presenter_mode:
-        filtered_tasks = plan.tasks
+    if len(plan.tasks) == 0:
+        st.info("No task plan could be generated from this input yet.")
     else:
-        workflow_options = ["all"] + sorted({task.workflow_type for task in plan.tasks})
-        priority_options = ["all", "high", "medium", "low"]
-        status_options = ["all", "urgent", "ready", "blocked"]
+        if presenter_mode:
+            filtered_tasks = plan.tasks
+        else:
+            workflow_options = ["all"] + sorted({task.workflow_type for task in plan.tasks})
+            priority_options = ["all", "high", "medium", "low"]
+            status_options = ["all", "urgent", "ready", "blocked"]
 
-        f1, f2, f3 = st.columns(3)
-        with f1:
-            selected_workflow = st.selectbox("Filter by workflow", workflow_options)
-        with f2:
-            selected_priority = st.selectbox("Filter by priority", priority_options)
-        with f3:
-            selected_status = st.selectbox("Filter by status", status_options)
+            f1, f2, f3 = st.columns(3)
+            with f1:
+                selected_workflow = st.selectbox("Filter by workflow", workflow_options)
+            with f2:
+                selected_priority = st.selectbox("Filter by priority", priority_options)
+            with f3:
+                selected_status = st.selectbox("Filter by status", status_options)
 
-        filtered_tasks = []
-        for task in plan.tasks:
-            workflow_ok = selected_workflow == "all" or task.workflow_type == selected_workflow
-            priority_ok = selected_priority == "all" or task.priority == selected_priority
-            status_ok = selected_status == "all" or task.status == selected_status
-            if workflow_ok and priority_ok and status_ok:
-                filtered_tasks.append(task)
+            filtered_tasks = []
+            for task in plan.tasks:
+                workflow_ok = selected_workflow == "all" or task.workflow_type == selected_workflow
+                priority_ok = selected_priority == "all" or task.priority == selected_priority
+                status_ok = selected_status == "all" or task.status == selected_status
+                if workflow_ok and priority_ok and status_ok:
+                    filtered_tasks.append(task)
 
-    if filtered_tasks:
-        for task in filtered_tasks:
-            render_task_card(task)
-    else:
-        st.caption("No tasks match the selected filters.")
+        if len(plan.tasks) > 0:
+            if filtered_tasks:
+                for task in filtered_tasks:
+                    render_task_card(task)
+            else:
+                st.caption("No tasks match the selected filters.")
 
     if not presenter_mode:
         st.divider()
