@@ -11,6 +11,8 @@ from visaflow.drafting.drafter import (
 )
 
 
+DEFAULT_PRESET = "Mixed admin case"
+
 DEMO_PRESETS = {
     "Housing follow-up": {
         "text": """Subject: Additional documents needed for spring housing approval
@@ -67,11 +69,11 @@ Student Services""",
 }
 
 DEMO_SCRIPT = [
-    "Start with Housing follow-up to show a clean end-to-end run.",
-    "Move to Financial aid review to show sentence-based document extraction.",
-    "Then show Immigration update to highlight workflow tagging.",
-    "Finish with Mixed admin case to show multiple workflows in one message.",
-    "Optionally end with pasted text or upload mode for a live example.",
+    "Start with Mixed admin case to show the strongest end-to-end example.",
+    "Use Housing follow-up if you want a simpler case after that.",
+    "Use Financial aid review to show sentence-based extraction.",
+    "Use Immigration update to highlight workflow tagging.",
+    "End with pasted text or upload mode only if you want a live input example.",
 ]
 
 
@@ -262,7 +264,7 @@ sample_files = sorted([p.name for p in SAMPLES_DIR.glob("*.txt")])
 
 with st.sidebar:
     st.header("Demo Controls")
-    presenter_mode = st.checkbox("Presenter mode", value=False)
+    presenter_mode = st.checkbox("Presenter mode", value=True)
     comparison_mode = st.checkbox("Comparison mode", value=False)
     show_demo_script = st.checkbox("Show demo script panel", value=True)
     input_mode = st.radio(
@@ -276,12 +278,15 @@ with st.sidebar:
     pasted_text = ""
     uploaded_file = None
 
+    preset_index = list(DEMO_PRESETS.keys()).index(DEFAULT_PRESET)
+
     if comparison_mode:
-        compare_left = st.selectbox("Left preset", list(DEMO_PRESETS.keys()), index=0, key="compare_left")
-        compare_right = st.selectbox("Right preset", list(DEMO_PRESETS.keys()), index=1, key="compare_right")
+        compare_left = st.selectbox("Left preset", list(DEMO_PRESETS.keys()), index=preset_index, key="compare_left")
+        compare_right = st.selectbox("Right preset", list(DEMO_PRESETS.keys()), index=0, key="compare_right")
     else:
         if input_mode == "Demo preset":
-            selected_preset = st.selectbox("Choose a preset", list(DEMO_PRESETS.keys()), index=0)
+            selected_preset = st.selectbox("Choose a preset", list(DEMO_PRESETS.keys()), index=preset_index)
+            st.caption(f"Recommended: {DEFAULT_PRESET}")
             if not presenter_mode:
                 st.caption(DEMO_PRESETS[selected_preset]["description"])
         elif input_mode == "Sample file":
@@ -310,6 +315,8 @@ A local demo tool for turning messy administrative requests into:
 - extracted requirements
 - prioritized tasks
 - usable response drafts
+
+Recommended first run: **Mixed admin case**
 """
         )
     else:
@@ -333,6 +340,7 @@ with hero_right:
   <div style="font-size:18px;font-weight:700;margin-bottom:8px;">{current_case_label}</div>
   <div style="font-size:13px;color:#4b5563;">Mode: {current_mode_label}</div>
   <div style="font-size:13px;color:#4b5563;">Presenter mode: {"on" if presenter_mode else "off"}</div>
+  <div style="font-size:13px;color:#4b5563;">Suggested preset: {DEFAULT_PRESET}</div>
 </div>
 """,
         unsafe_allow_html=True,
