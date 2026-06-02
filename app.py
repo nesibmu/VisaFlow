@@ -47,6 +47,19 @@ Best,
 International Student Office""",
         "description": "Shows immigration-related document handling and action-item extraction.",
     },
+    "Mixed admin case": {
+        "text": """Subject: Follow-up on housing and immigration documents
+
+Hello Nesib,
+
+To complete your file, please upload your signed housing agreement, a recent bank statement, a copy of your passport, and your current I-20 by June 15, 2026 through the student portal.
+
+Please confirm once the documents have been uploaded. If you expect any delay, reply to this message as soon as possible.
+
+Best,
+Student Services""",
+        "description": "Shows a mixed workflow with housing, financial, and immigration-related tasks in one case.",
+    },
 }
 
 
@@ -59,40 +72,109 @@ def run_pipeline_from_text(text: str):
     return extracted, plan, summary, baseline_draft, enhanced_draft
 
 
-def priority_emoji(priority: str) -> str:
+def priority_color(priority: str) -> str:
     if priority == "high":
-        return "🔴"
+        return "#ef4444"
     if priority == "medium":
-        return "🟡"
-    return "⚪"
+        return "#f59e0b"
+    return "#9ca3af"
+
+
+def confidence_label(score: float) -> str:
+    if score >= 0.9:
+        return "high"
+    if score >= 0.75:
+        return "medium"
+    return "low"
+
+
+def render_extraction_card(title: str, items, confidence_map, evidence_map):
+    st.markdown(f"### {title}")
+    if not items:
+        st.caption(f"No {title.lower()} found.")
+        return
+
+    for item in items:
+        score = confidence_map.get(item, 0.0)
+        label = confidence_label(score)
+        evidence = evidence_map.get(item, "")
+
+        st.markdown(
+            f"""
+<div style="border:1px solid #e5e7eb;border-radius:14px;padding:14px 16px;margin-bottom:10px;background:white;">
+  <div style="display:flex;justify-content:space-between;align-items:center;gap:12px;">
+    <div style="font-weight:600;font-size:15px;">{item}</div>
+    <div style="font-size:12px;padding:4px 8px;border-radius:999px;background:#f3f4f6;">
+      confidence: {label} ({score:.2f})
+    </div>
+  </div>
+  <div style="margin-top:8px;font-size:13px;color:#6b7280;">
+    {evidence if evidence else "No supporting snippet found."}
+  </div>
+</div>
+""",
+            unsafe_allow_html=True,
+        )
+
+
+def render_task_card(task):
+    color = priority_color(task.priority)
+    depends = ""
+    if task.depends_on:
+        depends = f"<div style='margin-top:8px;font-size:12px;color:#6b7280;'>Depends on: {', '.join(task.depends_on)}</div>"
+
+    st.markdown(
+        f"""
+<div style="border-left:6px solid {color};border-radius:12px;padding:14px 16px;margin-bottom:12px;background:#ffffff;border:1px solid #e5e7eb;">
+  <div style="display:flex;justify-content:space-between;align-items:center;gap:12px;">
+    <div style="font-weight:600;font-size:15px;">{task.task}</div>
+    <div style="font-size:12px;padding:4px 8px;border-radius:999px;background:#f9fafb;border:1px solid #e5e7eb;">
+      {task.priority}
+    </div>
+  </div>
+  <div style="margin-top:6px;font-size:12px;color:#6b7280;">
+    workflow: {task.workflow_type} • source: {task.source}
+  </div>
+  {depends}
+</div>
+""",
+        unsafe_allow_html=True,
+    )
 
 
 st.set_page_config(page_title="VisaFlow", layout="wide")
+
+st.markdown(
+    """
+<style>
+.block-container {
+    padding-top: 2rem;
+    padding-bottom: 2rem;
+    max-width: 1200px;
+}
+div[data-testid="stMetric"] {
+    background: #ffffff;
+    border: 1px solid #e5e7eb;
+    padding: 12px;
+    border-radius: 14px;
+}
+</style>
+""",
+    unsafe_allow_html=True,
+)
 
 st.title("VisaFlow")
 st.caption("AI operations agent for international-student bureaucracy")
 
 st.markdown(
     """
-VisaFlow turns administrative emails and document requests into:
-1. structured extracted information,
-2. a prioritized task plan,
-3. a draft response that can be edited and downloaded.
+VisaFlow turns messy administrative communication into a clearer workflow:
+- extract deadlines, requested documents, and action items
+- show supporting evidence
+- build a prioritized task plan
+- generate draft responses that can be edited and downloaded
 """
 )
-
-with st.expander("Demo guide", expanded=True):
-    st.write("Suggested demo flow:")
-    st.write("1. Start with a preset for a fast end-to-end example.")
-    st.write("2. Show extracted deadlines, requested documents, and action items.")
-    st.write("3. Show the task plan, filters, and evidence snippets.")
-    st.write("4. Compare baseline and enhanced draft outputs.")
-    st.write("5. End with pasted text or an uploaded file.")
-
-    st.write("")
-    st.write("Preset guide:")
-    for name, preset in DEMO_PRESETS.items():
-        st.write(f"- **{name}**: {preset['description']}")
 
 sample_files = sorted([p.name for p in SAMPLES_DIR.glob("*.txt")])
 
@@ -100,7 +182,8 @@ with st.sidebar:
     st.header("Demo Controls")
     input_mode = st.radio(
         "Input mode",
-        ["Demo preset", "Sample file", "Paste text", "Upload file"]
+        ["Demo preset", "Sample file", "Paste text", "Upload file"],
+        index=0,
     )
     show_comparison = st.checkbox("Show baseline vs enhanced draft", value=True)
 
@@ -110,14 +193,14 @@ with st.sidebar:
     uploaded_file = None
 
     if input_mode == "Demo preset":
-        selected_preset = st.selectbox("Choose a preset", list(DEMO_PRESETS.keys()))
+        selected_preset = st.selectbox("Choose a preset", list(DEMO_PRESETS.keys()), index=0)
         st.caption(DEMO_PRESETS[selected_preset]["description"])
     elif input_mode == "Sample file":
         selected_file = st.selectbox("Choose a sample file", sample_files)
     elif input_mode == "Paste text":
         pasted_text = st.text_area(
             "Paste email or document text",
-            height=250,
+            height=220,
             placeholder="Paste an administrative email or document here...",
         )
     else:
@@ -147,56 +230,58 @@ if run_pipeline:
         deadlines = extracted.get("deadlines", [])
         documents = extracted.get("requested_documents", [])
         actions = extracted.get("action_items", [])
+        evidence = extracted.get("evidence", {})
+        confidence = extracted.get("confidence", {})
 
-        m1, m2, m3, m4 = st.columns(4)
+        urgent_count = len([task for task in plan.tasks if task.priority == "high"])
+        workflow_count = len(set(task.workflow_type for task in plan.tasks))
+
+        st.subheader("Overview")
+        m1, m2, m3, m4, m5 = st.columns(5)
         m1.metric("Deadlines", len(deadlines))
         m2.metric("Documents", len(documents))
         m3.metric("Actions", len(actions))
-        m4.metric("Planned Tasks", len(plan.tasks))
+        m4.metric("Urgent tasks", urgent_count)
+        m5.metric("Workflows", workflow_count)
 
         st.divider()
 
-        left, right = st.columns([1.2, 1])
-
+        left, right = st.columns([1.15, 0.85])
         with left:
             st.subheader("Source Text")
-            st.text_area("Input", source_text, height=320)
-
+            st.text_area("Input", source_text, height=260)
         with right:
-            st.subheader("Next-Step Summary")
-            st.text_area("Summary", summary, height=320)
+            st.subheader("Operational Summary")
+            st.text_area("Summary", summary, height=260)
 
         st.divider()
 
-        col1, col2, col3 = st.columns(3)
-
-        with col1:
-            st.subheader("Deadlines")
-            if deadlines:
-                for item in deadlines:
-                    st.write(f"- {item}")
-            else:
-                st.caption("No deadlines found.")
-
-        with col2:
-            st.subheader("Requested Documents")
-            if documents:
-                for item in documents:
-                    st.write(f"- {item}")
-            else:
-                st.caption("No requested documents found.")
-
-        with col3:
-            st.subheader("Action Items")
-            if actions:
-                for item in actions:
-                    st.write(f"- {item}")
-            else:
-                st.caption("No action items found.")
+        c1, c2, c3 = st.columns(3)
+        with c1:
+            render_extraction_card(
+                "Deadlines",
+                deadlines,
+                confidence.get("deadlines", {}),
+                evidence.get("deadlines", {}),
+            )
+        with c2:
+            render_extraction_card(
+                "Requested Documents",
+                documents,
+                confidence.get("requested_documents", {}),
+                evidence.get("requested_documents", {}),
+            )
+        with c3:
+            render_extraction_card(
+                "Action Items",
+                actions,
+                confidence.get("action_items", {}),
+                evidence.get("action_items", {}),
+            )
 
         st.divider()
 
-        st.subheader("Planned Tasks")
+        st.subheader("Task Plan")
 
         workflow_options = ["all"] + sorted({task.workflow_type for task in plan.tasks})
         priority_options = ["all", "high", "medium", "low"]
@@ -215,35 +300,10 @@ if run_pipeline:
                 filtered_tasks.append(task)
 
         if filtered_tasks:
-            grouped = {}
             for task in filtered_tasks:
-                grouped.setdefault(task.workflow_type, []).append(task)
-
-            for workflow_type, tasks in grouped.items():
-                st.markdown(f"**{workflow_type.replace('_', ' ').title()}**")
-                for task in tasks:
-                    dep_text = ""
-                    if task.depends_on:
-                        dep_text = f"  \nDepends on: {', '.join(task.depends_on)}"
-                    st.markdown(
-                        f"{priority_emoji(task.priority)} **{task.task}**  \n"
-                        f"Priority: `{task.priority}` | Source: `{task.source}`{dep_text}"
-                    )
-                st.write("")
+                render_task_card(task)
         else:
             st.caption("No tasks match the selected filters.")
-
-        evidence = extracted.get("evidence", {})
-        if evidence:
-            st.divider()
-            st.subheader("Evidence Snippets")
-            for category in ["deadlines", "requested_documents", "action_items"]:
-                category_evidence = evidence.get(category, {})
-                if category_evidence:
-                    with st.expander(category.replace("_", " ").title(), expanded=False):
-                        for item, snippet in category_evidence.items():
-                            st.write(f"**{item}**")
-                            st.caption(snippet)
 
         st.divider()
         st.subheader("Draft Response")
