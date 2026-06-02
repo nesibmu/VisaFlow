@@ -63,6 +63,21 @@ st.set_page_config(page_title="VisaFlow", layout="wide")
 st.title("VisaFlow")
 st.caption("AI operations agent for international-student bureaucracy")
 
+st.markdown(
+    """
+VisaFlow helps turn messy administrative emails and document requests into:
+1. structured extracted information,
+2. a prioritized task plan,
+3. a ready-to-edit draft response.
+
+For the demo, the fastest options are:
+- a built-in demo preset,
+- a sample file,
+- pasted text,
+- or an uploaded `.txt` file.
+"""
+)
+
 sample_files = sorted([p.name for p in SAMPLES_DIR.glob("*.txt")])
 
 with st.sidebar:
