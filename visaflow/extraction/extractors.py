@@ -232,9 +232,36 @@ def remove_document_action_overlap(documents: List[str], actions: List[str]) -> 
     return filtered_docs
 
 
+def evidence_match_score(item: str, chunk: str) -> int:
+    item_norm = normalize_for_matching(item)
+    chunk_norm = normalize_for_matching(chunk)
+
+    if item_norm == chunk_norm:
+        return 100
+
+    score = 0
+
+    if item_norm in chunk_norm:
+        score += 50
+
+    item_words = set(item_norm.split())
+    chunk_words = set(chunk_norm.split())
+    overlap = len(item_words & chunk_words)
+    score += overlap * 8
+
+    if len(chunk.split()) <= 18:
+        score += 10
+    elif len(chunk.split()) <= 30:
+        score += 4
+
+    if chunk.lower().startswith("please"):
+        score += 3
+
+    return score
+
+
 def build_evidence_map(text: str, extracted: Dict[str, List[str]]) -> Dict[str, Dict[str, str]]:
     chunks = split_sentences(text)
-    normalized_chunks = [(chunk, normalize_for_matching(chunk)) for chunk in chunks]
 
     evidence = {
         "deadlines": {},
@@ -247,12 +274,15 @@ def build_evidence_map(text: str, extracted: Dict[str, List[str]]) -> Dict[str, 
             continue
 
         for item in items:
-            normalized_item = normalize_for_matching(item)
+            scored = []
+            for chunk in chunks:
+                score = evidence_match_score(item, chunk)
+                if score > 0:
+                    scored.append((score, chunk))
 
-            for original_chunk, normalized_chunk in normalized_chunks:
-                if normalized_item in normalized_chunk:
-                    evidence[category][item] = original_chunk
-                    break
+            if scored:
+                scored.sort(key=lambda x: (-x[0], len(x[1])))
+                evidence[category][item] = scored[0][1]
 
     return evidence
 
