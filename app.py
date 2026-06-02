@@ -172,6 +172,14 @@ if run_pipeline:
 
         st.divider()
         st.subheader("Draft Response")
-        st.text_area("Draft", draft, height=240)
+
+        editable_draft = st.text_area("Editable draft", draft, height=260)
+
+        st.download_button(
+            label="Download draft as .txt",
+            data=editable_draft,
+            file_name="visaflow_draft.txt",
+            mime="text/plain",
+        )
 else:
     st.info("Choose a sample file, paste text, or upload a file, then click 'Run pipeline'.")
