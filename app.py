@@ -74,20 +74,20 @@ st.caption("AI operations agent for international-student bureaucracy")
 
 st.markdown(
     """
-VisaFlow helps turn messy administrative emails and document requests into:
+VisaFlow turns administrative emails and document requests into:
 1. structured extracted information,
 2. a prioritized task plan,
-3. a ready-to-edit draft response.
+3. a draft response that can be edited and downloaded.
 """
 )
 
 with st.expander("Demo guide", expanded=True):
-    st.write("Recommended flow for the demo:")
-    st.write("1. Start with a preset to show a fast end-to-end example.")
-    st.write("2. Show extracted deadlines, documents, and action items.")
-    st.write("3. Show the task plan, filtering, and evidence.")
-    st.write("4. Compare baseline vs enhanced draft output.")
-    st.write("5. End with pasted text or uploaded file input.")
+    st.write("Suggested demo flow:")
+    st.write("1. Start with a preset for a fast end-to-end example.")
+    st.write("2. Show extracted deadlines, requested documents, and action items.")
+    st.write("3. Show the task plan, filters, and evidence snippets.")
+    st.write("4. Compare baseline and enhanced draft outputs.")
+    st.write("5. End with pasted text or an uploaded file.")
 
     st.write("")
     st.write("Preset guide:")
@@ -110,7 +110,7 @@ with st.sidebar:
     uploaded_file = None
 
     if input_mode == "Demo preset":
-        selected_preset = st.selectbox("Choose a demo preset", list(DEMO_PRESETS.keys()))
+        selected_preset = st.selectbox("Choose a preset", list(DEMO_PRESETS.keys()))
         st.caption(DEMO_PRESETS[selected_preset]["description"])
     elif input_mode == "Sample file":
         selected_file = st.selectbox("Choose a sample file", sample_files)
@@ -123,7 +123,7 @@ with st.sidebar:
     else:
         uploaded_file = st.file_uploader("Upload a .txt file", type=["txt"])
 
-    run_pipeline = st.button("Run pipeline")
+    run_pipeline = st.button("Run pipeline", use_container_width=True)
 
 if run_pipeline:
     source_text = ""
@@ -140,7 +140,7 @@ if run_pipeline:
             source_text = uploaded_file.read().decode("utf-8").strip()
 
     if not source_text:
-        st.warning("Please provide some input text first.")
+        st.warning("Please choose a preset, enter text, or upload a file before running the pipeline.")
     else:
         extracted, plan, summary, baseline_draft, enhanced_draft = run_pipeline_from_text(source_text)
 
@@ -159,8 +159,8 @@ if run_pipeline:
         left, right = st.columns([1.2, 1])
 
         with left:
-            st.subheader("Source")
-            st.text_area("Input text", source_text, height=320)
+            st.subheader("Source Text")
+            st.text_area("Input", source_text, height=320)
 
         with right:
             st.subheader("Next-Step Summary")
@@ -176,7 +176,7 @@ if run_pipeline:
                 for item in deadlines:
                     st.write(f"- {item}")
             else:
-                st.write("None found.")
+                st.caption("No deadlines found.")
 
         with col2:
             st.subheader("Requested Documents")
@@ -184,7 +184,7 @@ if run_pipeline:
                 for item in documents:
                     st.write(f"- {item}")
             else:
-                st.write("None found.")
+                st.caption("No requested documents found.")
 
         with col3:
             st.subheader("Action Items")
@@ -192,7 +192,7 @@ if run_pipeline:
                 for item in actions:
                     st.write(f"- {item}")
             else:
-                st.write("None found.")
+                st.caption("No action items found.")
 
         st.divider()
 
@@ -231,12 +231,12 @@ if run_pipeline:
                     )
                 st.write("")
         else:
-            st.write("No tasks match the selected filters.")
+            st.caption("No tasks match the selected filters.")
 
         evidence = extracted.get("evidence", {})
         if evidence:
             st.divider()
-            st.subheader("Evidence")
+            st.subheader("Evidence Snippets")
             for category in ["deadlines", "requested_documents", "action_items"]:
                 category_evidence = evidence.get(category, {})
                 if category_evidence:
@@ -259,6 +259,7 @@ if run_pipeline:
                     file_name="visaflow_baseline_draft.txt",
                     mime="text/plain",
                     key="download_baseline",
+                    use_container_width=True,
                 )
             with d2:
                 st.markdown("**Enhanced Draft**")
@@ -269,6 +270,7 @@ if run_pipeline:
                     file_name="visaflow_enhanced_draft.txt",
                     mime="text/plain",
                     key="download_enhanced",
+                    use_container_width=True,
                 )
         else:
             editable_draft = st.text_area("Editable draft", enhanced_draft, height=260)
@@ -277,6 +279,7 @@ if run_pipeline:
                 data=editable_draft,
                 file_name="visaflow_draft.txt",
                 mime="text/plain",
+                use_container_width=True,
             )
 else:
-    st.info("Choose a preset, sample file, pasted text, or uploaded file, then click 'Run pipeline'.")
+    st.info("Choose a preset, sample file, pasted text, or uploaded file, then click Run pipeline.")
