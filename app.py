@@ -32,29 +32,37 @@ sample_files = sorted([p.name for p in SAMPLES_DIR.glob("*.txt")])
 
 with st.sidebar:
     st.header("Demo Controls")
-    input_mode = st.radio("Input mode", ["Sample file", "Paste text"])
+    input_mode = st.radio("Input mode", ["Sample file", "Paste text", "Upload file"])
     enhanced_draft = st.checkbox("Use enhanced draft mode", value=True)
 
     selected_file = None
     pasted_text = ""
+    uploaded_file = None
 
     if input_mode == "Sample file":
         selected_file = st.selectbox("Choose a sample file", sample_files)
-    else:
+    elif input_mode == "Paste text":
         pasted_text = st.text_area(
             "Paste email or document text",
             height=250,
             placeholder="Paste an administrative email or document here...",
         )
+    else:
+        uploaded_file = st.file_uploader("Upload a .txt file", type=["txt"])
 
     run_pipeline = st.button("Run pipeline")
 
 if run_pipeline:
+    source_text = ""
+
     if input_mode == "Sample file":
         document = load_document(SAMPLES_DIR / selected_file)
         source_text = document.text
-    else:
+    elif input_mode == "Paste text":
         source_text = pasted_text.strip()
+    else:
+        if uploaded_file is not None:
+            source_text = uploaded_file.read().decode("utf-8").strip()
 
     if not source_text:
         st.warning("Please provide some input text first.")
@@ -150,4 +158,4 @@ if run_pipeline:
         st.subheader("Draft Response")
         st.text_area("Draft", draft, height=240)
 else:
-    st.info("Choose a sample file or paste text, then click 'Run pipeline'.")
+    st.info("Choose a sample file, paste text, or upload a file, then click 'Run pipeline'.")
