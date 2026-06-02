@@ -566,7 +566,7 @@ elif results is not None:
     if quality == "very_low":
         st.warning("This input is very short. The app may not have enough information to build a strong workflow.")
     elif quality == "low":
-        st.warning("Only a small amount of structured information was found. Results may be incomplete.")
+        st.warning("Only limited structured information was found. Results may be incomplete.")
     elif quality == "medium":
         st.info("A partial workflow was detected. This is usable, but likely not a complete administrative request.")
 
@@ -603,7 +603,7 @@ elif results is not None:
         with right:
             st.subheader("Task Plan")
             if len(plan.tasks) == 0:
-                st.info("No task plan could be generated from this input yet.")
+                st.info("No task plan was generated from this input.")
             else:
                 for task in plan.tasks[:8]:
                     render_task_card(task)
@@ -681,7 +681,7 @@ elif results is not None:
         st.subheader("Task Plan")
 
         if len(plan.tasks) == 0:
-            st.info("No task plan could be generated from this input yet.")
+            st.info("No task plan was generated from this input.")
         else:
             if presenter_mode:
                 filtered_tasks = plan.tasks
