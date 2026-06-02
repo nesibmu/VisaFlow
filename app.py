@@ -462,7 +462,14 @@ if show_demo_script and not minimal_view:
 
 st.subheader("Quick Launch")
 q1, q2, q3, q4, q5, q6 = st.columns(6)
-preset_names = list(DEMO_PRESETS.keys())
+preset_names = [
+    "Mixed admin case",
+    "Escalated admin case",
+    "Housing follow-up",
+    "Financial aid review",
+    "Immigration update",
+    "Weak noisy case",
+]
 quick_clicked = None
 
 if q1.button(preset_names[0], use_container_width=True):
