@@ -1,3 +1,4 @@
+from datetime import datetime
 from visaflow.schemas import Plan, PlannedTask
 
 
@@ -52,6 +53,27 @@ def infer_priority(task_text: str, source: str) -> str:
         return "low"
 
     return "medium"
+
+
+def parse_deadline(date_text: str):
+    formats = ["%B %d, %Y", "%B %d"]
+    for fmt in formats:
+        try:
+            dt = datetime.strptime(date_text, fmt)
+            if fmt == "%B %d":
+                dt = dt.replace(year=datetime.now().year)
+            return dt
+        except ValueError:
+            continue
+    return None
+
+
+def is_due_soon(date_text: str, days_threshold: int = 7) -> bool:
+    dt = parse_deadline(date_text)
+    if dt is None:
+        return False
+    delta = (dt.date() - datetime.now().date()).days
+    return 0 <= delta <= days_threshold
 
 
 def infer_status(source: str, priority: str, depends_on):
@@ -132,11 +154,13 @@ def build_task_plan(extracted: dict) -> Plan:
     document_tasks = []
 
     for deadline in extracted.get("deadlines", []):
-        task_text = f"Track deadline: {deadline}"
-        priority = infer_priority(task_text, "deadline")
+        label = f"Track deadline: {deadline}"
+        if is_due_soon(deadline):
+            label += " [due soon]"
+        priority = infer_priority(label, "deadline")
         tasks.append(
             PlannedTask(
-                task=task_text,
+                task=label,
                 priority=priority,
                 source="deadline",
                 workflow_type="general",
@@ -166,7 +190,7 @@ def build_task_plan(extracted: dict) -> Plan:
         task_text = f"Complete action: {action}"
         workflow_type = infer_workflow_type(action)
         depends_on = infer_dependencies(action, document_tasks, upload_packet_task)
-        priority = infer_priority(action, "action_item")
+        priority = infer_priority(task_text, "action_item")
         tasks.append(
             PlannedTask(
                 task=task_text,
