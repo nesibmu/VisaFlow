@@ -7,7 +7,7 @@ def _top_tasks(tasks, limit=4):
 
 def generate_recommended_next_action(plan: Plan) -> str:
     if not plan.tasks:
-        return "No clear next action was identified."
+        return "Recommended next action: gather a fuller administrative request before taking action."
 
     urgent = [task for task in plan.tasks if task.status == "urgent"]
     ready = [task for task in plan.tasks if task.status == "ready"]
@@ -19,12 +19,16 @@ def generate_recommended_next_action(plan: Plan) -> str:
         return f"Recommended next action: {ready[0].task}"
     if blocked:
         return f"Recommended next action: unblock {blocked[0].task}"
-    return "No clear next action was identified."
+    return "Recommended next action: review the request again for missing details."
 
 
 def generate_next_step_summary(plan: Plan) -> str:
     if not plan.tasks:
-        return "No immediate action items were identified."
+        return (
+            "Recommended next action: gather a fuller administrative request before taking action.\n\n"
+            "This message does not contain enough structured detail to build a strong workflow.\n"
+            "A better input would usually include a deadline, requested documents, or a specific action."
+        )
 
     urgent = [task for task in plan.tasks if task.status == "urgent"]
     ready = [task for task in plan.tasks if task.status == "ready"]
@@ -58,7 +62,12 @@ def generate_next_step_summary(plan: Plan) -> str:
 
 def generate_action_checklist(plan: Plan) -> str:
     if not plan.tasks:
-        return "No checklist items available."
+        return (
+            "Action checklist\n\n"
+            "[ ] Ask for a clearer request or full email thread\n"
+            "[ ] Look for deadlines, document names, or requested actions\n"
+            "[ ] Re-run the workflow once more structured information is available"
+        )
 
     lines = []
     lines.append("Action checklist")
@@ -94,7 +103,8 @@ def generate_ops_handoff(plan: Plan, extracted: dict) -> str:
     if actions:
         lines.append(f"- Actions: {', '.join(actions)}")
     if not (deadlines or documents or actions):
-        lines.append("- No structured items extracted.")
+        lines.append("- No structured items were extracted from this message.")
+        lines.append("- Recommended follow-up: collect the full request or a more detailed message.")
     lines.append("")
 
     lines.append("Execution status:")
@@ -105,14 +115,21 @@ def generate_ops_handoff(plan: Plan, extracted: dict) -> str:
     if blocked:
         lines.append(f"- Blocked: {'; '.join(blocked[:3])}")
     if not (urgent or ready or blocked):
-        lines.append("- No operational tasks generated.")
+        lines.append("- No operational tasks were generated.")
+        lines.append("- This case is better treated as an incomplete request rather than a finalized workflow.")
 
     return "\n".join(lines)
 
 
 def draft_response(plan: Plan) -> str:
     if not plan.tasks:
-        return "No immediate action items were identified."
+        return (
+            "Hello,\n\n"
+            "Thank you for the message. I reviewed it, but there is not enough specific information yet for me to act on concrete items.\n"
+            "If you share the full request or any deadlines and requested documents, I can follow up more precisely.\n\n"
+            "Best,\n"
+            "Nesib"
+        )
 
     urgent = [task for task in plan.tasks if task.status == "urgent"]
     ready = [task for task in plan.tasks if task.status == "ready"]
@@ -145,7 +162,13 @@ def draft_response(plan: Plan) -> str:
 
 def draft_response_enhanced(plan: Plan) -> str:
     if not plan.tasks:
-        return "Hello,\n\nThank you for the message. I do not see any immediate action items right now, but I will review everything again and follow up if needed.\n\nBest,\nNesib"
+        return (
+            "Hello,\n\n"
+            "Thank you for the message. I reviewed it, but it does not yet include enough concrete detail for me to organize a full action plan.\n"
+            "If you send the full request, any deadlines, or the specific documents being asked for, I can follow up more accurately.\n\n"
+            "Best,\n"
+            "Nesib"
+        )
 
     urgent = [task for task in plan.tasks if task.status == "urgent"]
     ready = [task for task in plan.tasks if task.status == "ready"]
