@@ -1,5 +1,4 @@
 import argparse
-from pathlib import Path
 
 from visaflow.main import run_demo
 from visaflow.config import SAMPLES_DIR
@@ -19,6 +18,7 @@ def main():
     parser = argparse.ArgumentParser(description="Run the VisaFlow demo on a sample file.")
     parser.add_argument("filename", nargs="?", help="Sample filename in data/samples/")
     parser.add_argument("--list", action="store_true", help="List available sample files")
+    parser.add_argument("--enhanced-draft", action="store_true", help="Use the enhanced local drafting mode")
     args = parser.parse_args()
 
     if args.list:
@@ -33,7 +33,7 @@ def main():
         print("Use --list to see available files.")
         return
 
-    print(run_demo(filename))
+    print(run_demo(filename, enhanced_draft=args.enhanced_draft))
 
 
 if __name__ == "__main__":

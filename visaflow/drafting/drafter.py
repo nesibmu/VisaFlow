@@ -63,3 +63,42 @@ def draft_response(plan: Plan) -> str:
     lines.append("Nesib")
 
     return "\n".join(lines)
+
+
+def draft_response_enhanced(plan: Plan) -> str:
+    if not plan.tasks:
+        return "Hello,\n\nThank you for the message. I do not see any immediate action items right now, but I will review everything again and follow up if needed.\n\nBest,\nNesib"
+
+    high_priority = [task.task for task in plan.tasks if task.priority == "high"]
+    medium_priority = [task.task for task in plan.tasks if task.priority == "medium"]
+
+    lines = []
+    lines.append("Hello,")
+    lines.append("")
+    lines.append("Thank you for the update. I have reviewed the requested items and will take care of the next steps.")
+
+    if high_priority:
+        lines.append("")
+        lines.append("I will prioritize the following first:")
+        for task in high_priority[:4]:
+            lines.append(f"- {task}")
+
+    if medium_priority:
+        lines.append("")
+        lines.append("After that, I will follow up on:")
+        for task in medium_priority[:3]:
+            lines.append(f"- {task}")
+
+    lines.append("")
+    lines.append("I will follow up once everything has been submitted or if I need any clarification.")
+    lines.append("")
+    lines.append("Best,")
+    lines.append("Nesib")
+
+    return "\n".join(lines)
+
+
+def draft_response_with_mode(plan: Plan, enhanced: bool = False) -> str:
+    if enhanced:
+        return draft_response_enhanced(plan)
+    return draft_response(plan)
