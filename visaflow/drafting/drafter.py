@@ -131,7 +131,7 @@ def generate_task_digest(plan: Plan, extracted: dict) -> str:
     lines.append(generate_recommended_next_action(plan))
     lines.append("")
 
-    lines.append("Immediate focus items")
+    lines.append("Immediate focus")
     if urgent:
         for task in urgent[:3]:
             lines.append(f"- {task.task}")
@@ -149,7 +149,7 @@ def generate_task_digest(plan: Plan, extracted: dict) -> str:
         lines.append("- None detected.")
     lines.append("")
 
-    lines.append("Blocked items")
+    lines.append("Blocked tasks")
     if blocked:
         for task in blocked[:4]:
             line = f"- {task.task}"
