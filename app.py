@@ -41,12 +41,13 @@ International Student Office""",
 }
 
 
-def run_pipeline_from_text(text: str, enhanced_draft: bool):
+def run_pipeline_from_text(text: str):
     extracted = extract_information(text)
     plan = build_task_plan(extracted)
-    draft = draft_response_with_mode(plan, enhanced=enhanced_draft)
     summary = generate_next_step_summary(plan)
-    return extracted, plan, summary, draft
+    baseline_draft = draft_response_with_mode(plan, enhanced=False)
+    enhanced_draft = draft_response_with_mode(plan, enhanced=True)
+    return extracted, plan, summary, baseline_draft, enhanced_draft
 
 
 def priority_emoji(priority: str) -> str:
@@ -70,7 +71,7 @@ with st.sidebar:
         "Input mode",
         ["Demo preset", "Sample file", "Paste text", "Upload file"]
     )
-    enhanced_draft = st.checkbox("Use enhanced draft mode", value=True)
+    show_comparison = st.checkbox("Show baseline vs enhanced draft", value=True)
 
     selected_preset = None
     selected_file = None
@@ -109,7 +110,7 @@ if run_pipeline:
     if not source_text:
         st.warning("Please provide some input text first.")
     else:
-        extracted, plan, summary, draft = run_pipeline_from_text(source_text, enhanced_draft)
+        extracted, plan, summary, baseline_draft, enhanced_draft = run_pipeline_from_text(source_text)
 
         deadlines = extracted.get("deadlines", [])
         documents = extracted.get("requested_documents", [])
@@ -215,13 +216,35 @@ if run_pipeline:
         st.divider()
         st.subheader("Draft Response")
 
-        editable_draft = st.text_area("Editable draft", draft, height=260)
-
-        st.download_button(
-            label="Download draft as .txt",
-            data=editable_draft,
-            file_name="visaflow_draft.txt",
-            mime="text/plain",
-        )
+        if show_comparison:
+            d1, d2 = st.columns(2)
+            with d1:
+                st.markdown("**Baseline Draft**")
+                baseline_editable = st.text_area("Baseline", baseline_draft, height=260)
+                st.download_button(
+                    label="Download baseline draft",
+                    data=baseline_editable,
+                    file_name="visaflow_baseline_draft.txt",
+                    mime="text/plain",
+                    key="download_baseline",
+                )
+            with d2:
+                st.markdown("**Enhanced Draft**")
+                enhanced_editable = st.text_area("Enhanced", enhanced_draft, height=260)
+                st.download_button(
+                    label="Download enhanced draft",
+                    data=enhanced_editable,
+                    file_name="visaflow_enhanced_draft.txt",
+                    mime="text/plain",
+                    key="download_enhanced",
+                )
+        else:
+            editable_draft = st.text_area("Editable draft", enhanced_draft, height=260)
+            st.download_button(
+                label="Download draft as .txt",
+                data=editable_draft,
+                file_name="visaflow_draft.txt",
+                mime="text/plain",
+            )
 else:
     st.info("Choose a preset, sample file, pasted text, or uploaded file, then click 'Run pipeline'.")
