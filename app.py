@@ -179,20 +179,11 @@ div[data-testid="stMetric"] {
 st.title("VisaFlow")
 st.caption("AI operations agent for international-student bureaucracy")
 
-st.markdown(
-    """
-VisaFlow turns administrative communication into a clearer workflow:
-- extract deadlines, requested documents, and action items
-- show supporting evidence
-- build a prioritized task plan
-- generate draft responses that can be edited and downloaded
-"""
-)
-
 sample_files = sorted([p.name for p in SAMPLES_DIR.glob("*.txt")])
 
 with st.sidebar:
     st.header("Demo Controls")
+    presenter_mode = st.checkbox("Presenter mode", value=False)
     input_mode = st.radio(
         "Input mode",
         ["Demo preset", "Sample file", "Paste text", "Upload file"],
@@ -206,7 +197,8 @@ with st.sidebar:
 
     if input_mode == "Demo preset":
         selected_preset = st.selectbox("Choose a preset", list(DEMO_PRESETS.keys()), index=0)
-        st.caption(DEMO_PRESETS[selected_preset]["description"])
+        if not presenter_mode:
+            st.caption(DEMO_PRESETS[selected_preset]["description"])
     elif input_mode == "Sample file":
         selected_file = st.selectbox("Choose a sample file", sample_files)
     elif input_mode == "Paste text":
@@ -219,6 +211,26 @@ with st.sidebar:
         uploaded_file = st.file_uploader("Upload a .txt file", type=["txt"])
 
     run_pipeline = st.button("Run pipeline", use_container_width=True)
+
+if presenter_mode:
+    st.markdown(
+        """
+VisaFlow converts administrative emails into structured operations support:
+- extracted requirements
+- prioritized tasks
+- editable response drafts
+"""
+    )
+else:
+    st.markdown(
+        """
+VisaFlow turns administrative communication into a clearer workflow:
+- extract deadlines, requested documents, and action items
+- show supporting evidence
+- build a prioritized task plan
+- generate draft responses that can be edited and downloaded
+"""
+    )
 
 if run_pipeline:
     source_text = ""
@@ -297,25 +309,28 @@ if run_pipeline:
 
         st.subheader("Task Plan")
 
-        workflow_options = ["all"] + sorted({task.workflow_type for task in plan.tasks})
-        priority_options = ["all", "high", "medium", "low"]
-        status_options = ["all", "urgent", "ready", "blocked"]
+        if presenter_mode:
+            filtered_tasks = plan.tasks
+        else:
+            workflow_options = ["all"] + sorted({task.workflow_type for task in plan.tasks})
+            priority_options = ["all", "high", "medium", "low"]
+            status_options = ["all", "urgent", "ready", "blocked"]
 
-        f1, f2, f3 = st.columns(3)
-        with f1:
-            selected_workflow = st.selectbox("Filter by workflow", workflow_options)
-        with f2:
-            selected_priority = st.selectbox("Filter by priority", priority_options)
-        with f3:
-            selected_status = st.selectbox("Filter by status", status_options)
+            f1, f2, f3 = st.columns(3)
+            with f1:
+                selected_workflow = st.selectbox("Filter by workflow", workflow_options)
+            with f2:
+                selected_priority = st.selectbox("Filter by priority", priority_options)
+            with f3:
+                selected_status = st.selectbox("Filter by status", status_options)
 
-        filtered_tasks = []
-        for task in plan.tasks:
-            workflow_ok = selected_workflow == "all" or task.workflow_type == selected_workflow
-            priority_ok = selected_priority == "all" or task.priority == selected_priority
-            status_ok = selected_status == "all" or task.status == selected_status
-            if workflow_ok and priority_ok and status_ok:
-                filtered_tasks.append(task)
+            filtered_tasks = []
+            for task in plan.tasks:
+                workflow_ok = selected_workflow == "all" or task.workflow_type == selected_workflow
+                priority_ok = selected_priority == "all" or task.priority == selected_priority
+                status_ok = selected_status == "all" or task.status == selected_status
+                if workflow_ok and priority_ok and status_ok:
+                    filtered_tasks.append(task)
 
         if filtered_tasks:
             for task in filtered_tasks:
@@ -323,76 +338,100 @@ if run_pipeline:
         else:
             st.caption("No tasks match the selected filters.")
 
-        st.divider()
-
-        with st.expander("Trace View", expanded=False):
-            st.markdown("### Source to Output Mapping")
-            for category in ["deadlines", "requested_documents", "action_items"]:
-                items = extracted.get(category, [])
-                if items:
-                    st.markdown(f"**{category.replace('_', ' ').title()}**")
-                    for item in items:
-                        matched_tasks = [task.task for task in plan.tasks if item.lower() in task.task.lower()]
-                        snippet = evidence.get(category, {}).get(item, "No snippet found.")
-                        conf = confidence.get(category, {}).get(item, 0.0)
-                        st.markdown(
-                            f"""
+        if not presenter_mode:
+            st.divider()
+            with st.expander("Trace View", expanded=False):
+                st.markdown("### Source to Output Mapping")
+                for category in ["deadlines", "requested_documents", "action_items"]:
+                    items = extracted.get(category, [])
+                    if items:
+                        st.markdown(f"**{category.replace('_', ' ').title()}**")
+                        for item in items:
+                            matched_tasks = [task.task for task in plan.tasks if item.lower() in task.task.lower()]
+                            snippet = evidence.get(category, {}).get(item, "No snippet found.")
+                            conf = confidence.get(category, {}).get(item, 0.0)
+                            st.markdown(
+                                f"""
 <div style="border:1px solid #e5e7eb;border-radius:12px;padding:12px;margin-bottom:10px;background:#fafafa;">
   <div><strong>Item:</strong> {item}</div>
   <div style="margin-top:6px;"><strong>Confidence:</strong> {conf:.2f}</div>
   <div style="margin-top:6px;"><strong>Evidence:</strong> {snippet}</div>
   <div style="margin-top:6px;"><strong>Mapped tasks:</strong> {matched_tasks if matched_tasks else 'None'}</div>
 </div>
-"""
-                        , unsafe_allow_html=True)
+""",
+                                unsafe_allow_html=True,
+                            )
 
         st.divider()
         st.subheader("Response Workspace")
 
-        tab1, tab2, tab3, tab4 = st.tabs(["Summary", "Baseline Draft", "Enhanced Draft", "Checklist"])
+        if presenter_mode:
+            tab1, tab2 = st.tabs(["Enhanced Draft", "Checklist"])
+            with tab1:
+                enhanced_editable = st.text_area("Enhanced Draft", enhanced_draft, height=320)
+                st.download_button(
+                    label="Download enhanced draft",
+                    data=enhanced_editable,
+                    file_name="visaflow_enhanced_draft.txt",
+                    mime="text/plain",
+                    use_container_width=True,
+                    key="download_enhanced_presenter",
+                )
+            with tab2:
+                checklist_text = st.text_area("Action Checklist", checklist, height=320)
+                st.download_button(
+                    label="Download checklist",
+                    data=checklist_text,
+                    file_name="visaflow_checklist.txt",
+                    mime="text/plain",
+                    use_container_width=True,
+                    key="download_checklist_presenter",
+                )
+        else:
+            tab1, tab2, tab3, tab4 = st.tabs(["Summary", "Baseline Draft", "Enhanced Draft", "Checklist"])
 
-        with tab1:
-            st.text_area("Summary view", summary, height=280)
-            st.download_button(
-                label="Download summary",
-                data=summary,
-                file_name="visaflow_summary.txt",
-                mime="text/plain",
-                use_container_width=True,
-                key="download_summary",
-            )
+            with tab1:
+                st.text_area("Summary view", summary, height=280)
+                st.download_button(
+                    label="Download summary",
+                    data=summary,
+                    file_name="visaflow_summary.txt",
+                    mime="text/plain",
+                    use_container_width=True,
+                    key="download_summary",
+                )
 
-        with tab2:
-            baseline_editable = st.text_area("Baseline Draft", baseline_draft, height=320)
-            st.download_button(
-                label="Download baseline draft",
-                data=baseline_editable,
-                file_name="visaflow_baseline_draft.txt",
-                mime="text/plain",
-                use_container_width=True,
-                key="download_baseline",
-            )
+            with tab2:
+                baseline_editable = st.text_area("Baseline Draft", baseline_draft, height=320)
+                st.download_button(
+                    label="Download baseline draft",
+                    data=baseline_editable,
+                    file_name="visaflow_baseline_draft.txt",
+                    mime="text/plain",
+                    use_container_width=True,
+                    key="download_baseline",
+                )
 
-        with tab3:
-            enhanced_editable = st.text_area("Enhanced Draft", enhanced_draft, height=320)
-            st.download_button(
-                label="Download enhanced draft",
-                data=enhanced_editable,
-                file_name="visaflow_enhanced_draft.txt",
-                mime="text/plain",
-                use_container_width=True,
-                key="download_enhanced",
-            )
+            with tab3:
+                enhanced_editable = st.text_area("Enhanced Draft", enhanced_draft, height=320)
+                st.download_button(
+                    label="Download enhanced draft",
+                    data=enhanced_editable,
+                    file_name="visaflow_enhanced_draft.txt",
+                    mime="text/plain",
+                    use_container_width=True,
+                    key="download_enhanced",
+                )
 
-        with tab4:
-            checklist_text = st.text_area("Action Checklist", checklist, height=320)
-            st.download_button(
-                label="Download checklist",
-                data=checklist_text,
-                file_name="visaflow_checklist.txt",
-                mime="text/plain",
-                use_container_width=True,
-                key="download_checklist",
-            )
+            with tab4:
+                checklist_text = st.text_area("Action Checklist", checklist, height=320)
+                st.download_button(
+                    label="Download checklist",
+                    data=checklist_text,
+                    file_name="visaflow_checklist.txt",
+                    mime="text/plain",
+                    use_container_width=True,
+                    key="download_checklist",
+                )
 else:
     st.info("Choose a preset, sample file, pasted text, or uploaded file, then click Run pipeline.")
