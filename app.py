@@ -644,7 +644,7 @@ elif results is not None:
     st.markdown(
         f"""
 <div style="border:1px solid #e5e7eb;border-radius:14px;padding:14px 16px;background:#ffffff;margin-bottom:14px;">
-  <div style="font-size:12px;color:#6b7280;margin-bottom:6px;">System confidence</div>
+  <div style="font-size:12px;color:#6b7280;margin-bottom:6px;">Overall system confidence</div>
   <div style="font-size:16px;font-weight:700;color:#111827;">{case_confidence_label} ({case_confidence_score:.2f})</div>
 </div>
 """,
