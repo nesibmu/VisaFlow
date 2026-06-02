@@ -5,21 +5,40 @@ def generate_next_step_summary(plan: Plan) -> str:
     if not plan.tasks:
         return "No immediate action items were identified."
 
-    high_priority = [task for task in plan.tasks if task.priority == "high"]
-    medium_priority = [task for task in plan.tasks if task.priority == "medium"]
+    urgent = [task for task in plan.tasks if task.status == "urgent"]
+    ready = [task for task in plan.tasks if task.status == "ready"]
+    blocked = [task for task in plan.tasks if task.status == "blocked"]
 
     lines = ["Next-step summary:"]
 
-    if high_priority:
+    if urgent:
         lines.append("Handle these first:")
-        for task in high_priority[:5]:
+        for task in urgent[:5]:
             lines.append(f"- {task.task}")
 
-    if medium_priority:
+    if ready:
         lines.append("")
-        lines.append("Then follow up on:")
-        for task in medium_priority[:5]:
+        lines.append("Ready to work on:")
+        for task in ready[:5]:
             lines.append(f"- {task.task}")
+
+    if blocked:
+        lines.append("")
+        lines.append("Blocked pending other steps:")
+        for task in blocked[:5]:
+            lines.append(f"- {task.task}")
+
+    return "\n".join(lines)
+
+
+def generate_action_checklist(plan: Plan) -> str:
+    if not plan.tasks:
+        return "No checklist items available."
+
+    lines = ["Action checklist:"]
+    for task in plan.tasks:
+        prefix = "[ ]"
+        lines.append(f"{prefix} {task.task} ({task.status})")
 
     return "\n".join(lines)
 
@@ -28,36 +47,36 @@ def draft_response(plan: Plan) -> str:
     if not plan.tasks:
         return "No immediate action items were identified."
 
-    high_priority = [task for task in plan.tasks if task.priority == "high"]
-    medium_priority = [task for task in plan.tasks if task.priority == "medium"]
-    low_priority = [task for task in plan.tasks if task.priority == "low"]
+    urgent = [task for task in plan.tasks if task.status == "urgent"]
+    ready = [task for task in plan.tasks if task.status == "ready"]
+    blocked = [task for task in plan.tasks if task.status == "blocked"]
 
     lines = []
     lines.append("Suggested next steps")
     lines.append("")
 
-    if high_priority:
+    if urgent:
         lines.append("Urgent:")
-        for task in high_priority:
+        for task in urgent:
             lines.append(f"- {task.task}")
         lines.append("")
 
-    if medium_priority:
-        lines.append("Important follow-up:")
-        for task in medium_priority:
+    if ready:
+        lines.append("Ready:")
+        for task in ready:
             lines.append(f"- {task.task}")
         lines.append("")
 
-    if low_priority:
-        lines.append("Lower-priority items:")
-        for task in low_priority:
+    if blocked:
+        lines.append("Blocked:")
+        for task in blocked:
             lines.append(f"- {task.task}")
         lines.append("")
 
     lines.append("Draft reply:")
     lines.append("Hello,")
     lines.append("")
-    lines.append("Thank you for the update. I will work on the requested items and follow up once everything has been submitted.")
+    lines.append("Thank you for the update. I will work through the requested items and follow up once everything has been submitted.")
     lines.append("")
     lines.append("Best,")
     lines.append("Nesib")
@@ -69,28 +88,35 @@ def draft_response_enhanced(plan: Plan) -> str:
     if not plan.tasks:
         return "Hello,\n\nThank you for the message. I do not see any immediate action items right now, but I will review everything again and follow up if needed.\n\nBest,\nNesib"
 
-    high_priority = [task.task for task in plan.tasks if task.priority == "high"]
-    medium_priority = [task.task for task in plan.tasks if task.priority == "medium"]
+    urgent = [task.task for task in plan.tasks if task.status == "urgent"]
+    ready = [task.task for task in plan.tasks if task.status == "ready"]
+    blocked = [task.task for task in plan.tasks if task.status == "blocked"]
 
     lines = []
     lines.append("Hello,")
     lines.append("")
-    lines.append("Thank you for the update. I have reviewed the requested items and will take care of the next steps.")
+    lines.append("Thank you for the update. I reviewed the request and organized the next steps on my side.")
 
-    if high_priority:
+    if urgent:
         lines.append("")
         lines.append("I will prioritize the following first:")
-        for task in high_priority[:4]:
+        for task in urgent[:4]:
             lines.append(f"- {task}")
 
-    if medium_priority:
+    if ready:
         lines.append("")
-        lines.append("After that, I will follow up on:")
-        for task in medium_priority[:3]:
+        lines.append("I can also move forward on:")
+        for task in ready[:4]:
+            lines.append(f"- {task}")
+
+    if blocked:
+        lines.append("")
+        lines.append("A few items depend on earlier steps being completed first:")
+        for task in blocked[:3]:
             lines.append(f"- {task}")
 
     lines.append("")
-    lines.append("I will follow up once everything has been submitted or if I need any clarification.")
+    lines.append("I will follow up once the requested items have been submitted, or sooner if I need clarification.")
     lines.append("")
     lines.append("Best,")
     lines.append("Nesib")

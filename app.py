@@ -4,7 +4,11 @@ from visaflow.config import SAMPLES_DIR
 from visaflow.ingestion.loaders import load_document
 from visaflow.extraction.extractors import extract_information
 from visaflow.planning.planner import build_task_plan
-from visaflow.drafting.drafter import draft_response_with_mode, generate_next_step_summary
+from visaflow.drafting.drafter import (
+    draft_response_with_mode,
+    generate_next_step_summary,
+    generate_action_checklist,
+)
 
 
 DEMO_PRESETS = {
@@ -67,9 +71,10 @@ def run_pipeline_from_text(text: str):
     extracted = extract_information(text)
     plan = build_task_plan(extracted)
     summary = generate_next_step_summary(plan)
+    checklist = generate_action_checklist(plan)
     baseline_draft = draft_response_with_mode(plan, enhanced=False)
     enhanced_draft = draft_response_with_mode(plan, enhanced=True)
-    return extracted, plan, summary, baseline_draft, enhanced_draft
+    return extracted, plan, summary, checklist, baseline_draft, enhanced_draft
 
 
 def priority_color(priority: str) -> str:
@@ -193,7 +198,6 @@ with st.sidebar:
         ["Demo preset", "Sample file", "Paste text", "Upload file"],
         index=0,
     )
-    show_comparison = st.checkbox("Show baseline vs enhanced draft", value=True)
 
     selected_preset = None
     selected_file = None
@@ -233,7 +237,7 @@ if run_pipeline:
     if not source_text:
         st.warning("Please choose a preset, enter text, or upload a file before running the pipeline.")
     else:
-        extracted, plan, summary, baseline_draft, enhanced_draft = run_pipeline_from_text(source_text)
+        extracted, plan, summary, checklist, baseline_draft, enhanced_draft = run_pipeline_from_text(source_text)
 
         deadlines = extracted.get("deadlines", [])
         documents = extracted.get("requested_documents", [])
@@ -320,40 +324,52 @@ if run_pipeline:
             st.caption("No tasks match the selected filters.")
 
         st.divider()
-        st.subheader("Draft Response")
+        st.subheader("Response Workspace")
 
-        if show_comparison:
-            d1, d2 = st.columns(2)
-            with d1:
-                st.markdown("**Baseline Draft**")
-                baseline_editable = st.text_area("Baseline", baseline_draft, height=260)
-                st.download_button(
-                    label="Download baseline draft",
-                    data=baseline_editable,
-                    file_name="visaflow_baseline_draft.txt",
-                    mime="text/plain",
-                    key="download_baseline",
-                    use_container_width=True,
-                )
-            with d2:
-                st.markdown("**Enhanced Draft**")
-                enhanced_editable = st.text_area("Enhanced", enhanced_draft, height=260)
-                st.download_button(
-                    label="Download enhanced draft",
-                    data=enhanced_editable,
-                    file_name="visaflow_enhanced_draft.txt",
-                    mime="text/plain",
-                    key="download_enhanced",
-                    use_container_width=True,
-                )
-        else:
-            editable_draft = st.text_area("Editable draft", enhanced_draft, height=260)
+        tab1, tab2, tab3, tab4 = st.tabs(["Summary", "Baseline Draft", "Enhanced Draft", "Checklist"])
+
+        with tab1:
+            st.text_area("Summary view", summary, height=280)
             st.download_button(
-                label="Download draft as .txt",
-                data=editable_draft,
-                file_name="visaflow_draft.txt",
+                label="Download summary",
+                data=summary,
+                file_name="visaflow_summary.txt",
                 mime="text/plain",
                 use_container_width=True,
+                key="download_summary",
+            )
+
+        with tab2:
+            baseline_editable = st.text_area("Baseline Draft", baseline_draft, height=320)
+            st.download_button(
+                label="Download baseline draft",
+                data=baseline_editable,
+                file_name="visaflow_baseline_draft.txt",
+                mime="text/plain",
+                use_container_width=True,
+                key="download_baseline",
+            )
+
+        with tab3:
+            enhanced_editable = st.text_area("Enhanced Draft", enhanced_draft, height=320)
+            st.download_button(
+                label="Download enhanced draft",
+                data=enhanced_editable,
+                file_name="visaflow_enhanced_draft.txt",
+                mime="text/plain",
+                use_container_width=True,
+                key="download_enhanced",
+            )
+
+        with tab4:
+            checklist_text = st.text_area("Action Checklist", checklist, height=320)
+            st.download_button(
+                label="Download checklist",
+                data=checklist_text,
+                file_name="visaflow_checklist.txt",
+                mime="text/plain",
+                use_container_width=True,
+                key="download_checklist",
             )
 else:
     st.info("Choose a preset, sample file, pasted text, or uploaded file, then click Run pipeline.")
