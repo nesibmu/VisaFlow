@@ -123,9 +123,25 @@ if run_pipeline:
 
         st.subheader("Planned Tasks")
 
-        if plan.tasks:
+        workflow_options = ["all"] + sorted({task.workflow_type for task in plan.tasks})
+        priority_options = ["all", "high", "medium", "low"]
+
+        f1, f2 = st.columns(2)
+        with f1:
+            selected_workflow = st.selectbox("Filter by workflow", workflow_options)
+        with f2:
+            selected_priority = st.selectbox("Filter by priority", priority_options)
+
+        filtered_tasks = []
+        for task in plan.tasks:
+            workflow_ok = selected_workflow == "all" or task.workflow_type == selected_workflow
+            priority_ok = selected_priority == "all" or task.priority == selected_priority
+            if workflow_ok and priority_ok:
+                filtered_tasks.append(task)
+
+        if filtered_tasks:
             grouped = {}
-            for task in plan.tasks:
+            for task in filtered_tasks:
                 grouped.setdefault(task.workflow_type, []).append(task)
 
             for workflow_type, tasks in grouped.items():
@@ -140,7 +156,7 @@ if run_pipeline:
                     )
                 st.write("")
         else:
-            st.write("No tasks generated.")
+            st.write("No tasks match the selected filters.")
 
         evidence = extracted.get("evidence", {})
         if evidence:
