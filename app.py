@@ -108,6 +108,7 @@ def run_pipeline_from_text(text: str):
     recommended_next_action = generate_recommended_next_action(plan)
     checklist = generate_action_checklist(plan)
     ops_handoff = generate_ops_handoff(plan, extracted)
+    email_ready_reply = generate_email_ready_reply(plan)
     baseline_draft = draft_response_with_mode(plan, enhanced=False)
     enhanced_draft = draft_response_with_mode(plan, enhanced=True)
     return {
@@ -118,6 +119,7 @@ def run_pipeline_from_text(text: str):
         "recommended_next_action": recommended_next_action,
         "checklist": checklist,
         "ops_handoff": ops_handoff,
+        "email_ready_reply": email_ready_reply,
         "baseline_draft": baseline_draft,
         "enhanced_draft": enhanced_draft,
     }
@@ -529,6 +531,7 @@ elif results is not None:
     recommended_next_action = results["recommended_next_action"]
     checklist = results["checklist"]
     ops_handoff = results["ops_handoff"]
+    email_ready_reply = results["email_ready_reply"]
     baseline_draft = results["baseline_draft"]
     enhanced_draft = results["enhanced_draft"]
 

@@ -170,6 +170,45 @@ def generate_ops_handoff(plan: Plan, extracted: dict) -> str:
     return "\n".join(lines)
 
 
+def generate_email_ready_reply(plan: Plan) -> str:
+    if not plan.tasks:
+        return (
+            "Hello,\n\n"
+            "Thank you for the message. I reviewed it, but I do not yet have enough concrete detail to act on specific items.\n"
+            "If you send the full request, any deadlines, or the documents being requested, I can follow up more precisely.\n\n"
+            "Best,\n"
+            "Nesib"
+        )
+
+    urgent = [task.task for task in plan.tasks if task.status == "urgent"]
+    ready = [task.task for task in plan.tasks if task.status == "ready"]
+
+    lines = []
+    lines.append("Hello,")
+    lines.append("")
+    lines.append("Thank you for the update. I reviewed the request and organized the next steps on my side.")
+
+    if urgent:
+        lines.append("")
+        lines.append("I will prioritize the following first:")
+        for task in urgent[:2]:
+            lines.append(f"- {task}")
+
+    if ready:
+        lines.append("")
+        lines.append("I can also move forward on:")
+        for task in ready[:3]:
+            lines.append(f"- {task}")
+
+    lines.append("")
+    lines.append("I will follow up once the requested items have been completed and uploaded.")
+    lines.append("")
+    lines.append("Best,")
+    lines.append("Nesib")
+
+    return "\n".join(lines)
+
+
 def draft_response(plan: Plan) -> str:
     if not plan.tasks:
         return (
