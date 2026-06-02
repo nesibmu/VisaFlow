@@ -7,6 +7,40 @@ from visaflow.planning.planner import build_task_plan
 from visaflow.drafting.drafter import draft_response_with_mode, generate_next_step_summary
 
 
+DEMO_PRESETS = {
+    "Housing follow-up": """Subject: Additional documents needed for spring housing approval
+
+Hello Nesib,
+
+To complete your housing review, please submit your updated housing contract request and a recent bank statement by May 28, 2026. You should also upload a copy of your passport and current I-20 through the student portal.
+
+Please confirm once the materials have been uploaded. If you need an extension, respond to this message as soon as possible.
+
+Best,
+Housing Assignments""",
+    "Financial aid review": """Subject: Missing documents for financial aid review
+
+Hello Nesib,
+
+We reviewed your file and still need a signed statement of support and your most recent bank statement.
+
+Please upload both documents by June 3, 2026. If you are unable to meet this deadline, reply to this email as soon as possible.
+
+Best,
+Financial Aid Office""",
+    "Immigration update": """Subject: Missing immigration documents
+
+Hello,
+
+To complete your record, please upload a copy of your passport and your current I-20 by June 12, 2026 through the student portal.
+
+Please confirm once the materials have been uploaded.
+
+Best,
+International Student Office""",
+}
+
+
 def run_pipeline_from_text(text: str, enhanced_draft: bool):
     extracted = extract_information(text)
     plan = build_task_plan(extracted)
@@ -32,14 +66,20 @@ sample_files = sorted([p.name for p in SAMPLES_DIR.glob("*.txt")])
 
 with st.sidebar:
     st.header("Demo Controls")
-    input_mode = st.radio("Input mode", ["Sample file", "Paste text", "Upload file"])
+    input_mode = st.radio(
+        "Input mode",
+        ["Demo preset", "Sample file", "Paste text", "Upload file"]
+    )
     enhanced_draft = st.checkbox("Use enhanced draft mode", value=True)
 
+    selected_preset = None
     selected_file = None
     pasted_text = ""
     uploaded_file = None
 
-    if input_mode == "Sample file":
+    if input_mode == "Demo preset":
+        selected_preset = st.selectbox("Choose a demo preset", list(DEMO_PRESETS.keys()))
+    elif input_mode == "Sample file":
         selected_file = st.selectbox("Choose a sample file", sample_files)
     elif input_mode == "Paste text":
         pasted_text = st.text_area(
@@ -55,7 +95,9 @@ with st.sidebar:
 if run_pipeline:
     source_text = ""
 
-    if input_mode == "Sample file":
+    if input_mode == "Demo preset":
+        source_text = DEMO_PRESETS[selected_preset]
+    elif input_mode == "Sample file":
         document = load_document(SAMPLES_DIR / selected_file)
         source_text = document.text
     elif input_mode == "Paste text":
@@ -182,4 +224,4 @@ if run_pipeline:
             mime="text/plain",
         )
 else:
-    st.info("Choose a sample file, paste text, or upload a file, then click 'Run pipeline'.")
+    st.info("Choose a preset, sample file, pasted text, or uploaded file, then click 'Run pipeline'.")
