@@ -63,14 +63,14 @@ def generate_next_step_summary(plan: Plan) -> str:
 def generate_action_checklist(plan: Plan) -> str:
     if not plan.tasks:
         return (
-            "Action checklist\n\n"
+            "Checklist\n\n"
             "[ ] Ask for a clearer request or full email thread\n"
             "[ ] Look for deadlines, document names, or requested actions\n"
             "[ ] Re-run the workflow once more structured information is available"
         )
 
     lines = []
-    lines.append("Action checklist")
+    lines.append("Checklist")
     lines.append("")
 
     for task in plan.tasks:
@@ -90,12 +90,19 @@ def generate_ops_handoff(plan: Plan, extracted: dict) -> str:
     blocked = [task.task for task in plan.tasks if task.status == "blocked"]
 
     lines = []
-    lines.append("Ops handoff")
+    lines.append("Operations handoff")
     lines.append("")
     lines.append(generate_recommended_next_action(plan))
     lines.append("")
 
-    lines.append("Requested items:")
+    lines.append("Case snapshot")
+    lines.append(f"- Deadlines found: {len(deadlines)}")
+    lines.append(f"- Requested documents found: {len(documents)}")
+    lines.append(f"- Action items found: {len(actions)}")
+    lines.append(f"- Planned tasks: {len(plan.tasks)}")
+    lines.append("")
+
+    lines.append("Extracted requirements")
     if deadlines:
         lines.append(f"- Deadlines: {', '.join(deadlines)}")
     if documents:
@@ -107,16 +114,30 @@ def generate_ops_handoff(plan: Plan, extracted: dict) -> str:
         lines.append("- Recommended follow-up: collect the full request or a more detailed message.")
     lines.append("")
 
-    lines.append("Execution status:")
+    lines.append("Execution status")
     if urgent:
-        lines.append(f"- Urgent: {'; '.join(urgent[:3])}")
+        lines.append("- Urgent")
+        for item in urgent[:4]:
+            lines.append(f"  - {item}")
     if ready:
-        lines.append(f"- Ready: {'; '.join(ready[:4])}")
+        lines.append("- Ready")
+        for item in ready[:5]:
+            lines.append(f"  - {item}")
     if blocked:
-        lines.append(f"- Blocked: {'; '.join(blocked[:3])}")
+        lines.append("- Blocked")
+        for item in blocked[:4]:
+            lines.append(f"  - {item}")
     if not (urgent or ready or blocked):
         lines.append("- No operational tasks were generated.")
         lines.append("- This case is better treated as an incomplete request rather than a finalized workflow.")
+    lines.append("")
+
+    lines.append("Suggested handoff note")
+    if plan.tasks:
+        lines.append("- Use the recommended next action above as the first step.")
+        lines.append("- Then work through ready items before revisiting blocked tasks.")
+    else:
+        lines.append("- Ask for the full administrative request before taking action.")
 
     return "\n".join(lines)
 
