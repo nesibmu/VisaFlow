@@ -25,16 +25,26 @@ def normalize_for_matching(text: str) -> str:
 
 def split_sentences(text: str) -> List[str]:
     text = text.replace("\r\n", "\n").replace("\r", "\n").strip()
-
     raw_chunks = re.split(r"\n\s*\n|(?<=[.!?])\s+(?=[A-Z])", text)
-    cleaned = []
 
+    cleaned = []
     for chunk in raw_chunks:
         chunk = re.sub(r"\s+", " ", chunk).strip()
         if chunk:
             cleaned.append(chunk)
 
     return cleaned
+
+
+def clean_document_phrase(text: str) -> str:
+    text = text.strip(" .,:;")
+    text = re.sub(r"^(a|an|the|your|their)\s+", "", text, flags=re.IGNORECASE)
+    text = re.sub(r"\bthrough the student portal\b", "", text, flags=re.IGNORECASE)
+    text = re.sub(r"\bthrough the portal\b", "", text, flags=re.IGNORECASE)
+    text = re.sub(r"\bupload\b", "", text, flags=re.IGNORECASE)
+    text = re.sub(r"\bsubmit\b", "", text, flags=re.IGNORECASE)
+    text = re.sub(r"\s+", " ", text).strip(" .,:;")
+    return text
 
 
 def extract_deadlines(text: str) -> List[str]:
@@ -67,22 +77,23 @@ def extract_requested_documents(text: str) -> List[str]:
     for line in text.splitlines():
         stripped = line.strip()
         if stripped.startswith("- "):
-            documents.append(stripped[2:].strip())
+            documents.append(clean_document_phrase(stripped[2:]))
 
     sentence_patterns = [
         r"we .*? need (.+?)(?:\.|\n)",
         r"we .*? require (.+?)(?:\.|\n)",
-        r"please upload (.+?)(?:\.|\n)",
-        r"please submit (.+?)(?:\.|\n)",
+        r"please upload (.+?)(?: by |\.|\n)",
+        r"please submit (.+?)(?: by |\.|\n)",
+        r"to complete your .*?, please upload (.+?)(?: by |\.|\n)",
+        r"to complete your .*?, please submit (.+?)(?: by |\.|\n)",
     ]
 
     for pattern in sentence_patterns:
-        match = re.search(pattern, text, flags=re.IGNORECASE)
-        if match:
-            chunk = match.group(1)
+        for match in re.findall(pattern, text, flags=re.IGNORECASE):
+            chunk = match.strip()
             parts = re.split(r",| and ", chunk)
             for part in parts:
-                cleaned = part.strip(" .")
+                cleaned = clean_document_phrase(part)
                 if cleaned and len(cleaned) > 2:
                     documents.append(cleaned)
 
