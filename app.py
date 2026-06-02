@@ -334,11 +334,17 @@ if run_pipeline:
                     for item in items:
                         matched_tasks = [task.task for task in plan.tasks if item.lower() in task.task.lower()]
                         snippet = evidence.get(category, {}).get(item, "No snippet found.")
+                        conf = confidence.get(category, {}).get(item, 0.0)
                         st.markdown(
-                            f"- **Item:** {item}\n"
-                            f"  \n  **Evidence:** {snippet}\n"
-                            f"  \n  **Mapped tasks:** {matched_tasks if matched_tasks else 'None'}"
-                        )
+                            f"""
+<div style="border:1px solid #e5e7eb;border-radius:12px;padding:12px;margin-bottom:10px;background:#fafafa;">
+  <div><strong>Item:</strong> {item}</div>
+  <div style="margin-top:6px;"><strong>Confidence:</strong> {conf:.2f}</div>
+  <div style="margin-top:6px;"><strong>Evidence:</strong> {snippet}</div>
+  <div style="margin-top:6px;"><strong>Mapped tasks:</strong> {matched_tasks if matched_tasks else 'None'}</div>
+</div>
+"""
+                        , unsafe_allow_html=True)
 
         st.divider()
         st.subheader("Response Workspace")
