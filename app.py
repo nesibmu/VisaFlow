@@ -21,7 +21,7 @@ Please confirm once the documents have been uploaded. If you expect any delay, r
 
 Best,
 Student Services""",
-        "note": "Best default demo. Shows multiple document requests, a deadline, and follow-up actions.",
+        "note": "Best default demo. Shows multiple requested documents, a deadline, and follow-up actions.",
     },
     "Escalated admin case": {
         "text": """Subject: Urgent follow-up on housing, financial aid, and immigration items
@@ -34,7 +34,7 @@ Please upload all materials through the student portal by June 10, 2026. You sho
 
 Best,
 Student Services and Financial Support""",
-        "note": "Best dense case. Shows multiple deadlines and higher urgency.",
+        "note": "Best dense case. Shows multiple deadlines and stronger urgency.",
     },
     "Housing follow-up": {
         "text": """Subject: Additional documents needed for spring housing approval
@@ -138,7 +138,6 @@ def run_pipeline_from_text(text: str):
         extracted,
         fallback="Task digest unavailable.",
     )
-
     baseline_draft = safe_call(
         "draft_response_with_mode",
         plan,
@@ -168,16 +167,6 @@ def run_pipeline_from_text(text: str):
     }
 
 
-def confidence_chip(label: str) -> str:
-    styles = {
-        "high": ("#dcfce7", "#166534"),
-        "medium": ("#fef3c7", "#92400e"),
-        "low": ("#fee2e2", "#991b1b"),
-    }
-    bg, fg = styles.get(label, ("#f3f4f6", "#111827"))
-    return f"<span style='background:{bg};color:{fg};padding:4px 8px;border-radius:999px;font-size:12px;font-weight:600;'>{label}</span>"
-
-
 def compute_case_confidence(extracted: dict, plan) -> tuple:
     confidence_map = extracted.get("confidence", {})
     scores = []
@@ -203,8 +192,18 @@ def compute_case_confidence(extracted: dict, plan) -> tuple:
     return "low", avg
 
 
+def badge_html(label: str) -> str:
+    styles = {
+        "high": ("#dcfce7", "#166534"),
+        "medium": ("#fef3c7", "#92400e"),
+        "low": ("#fee2e2", "#991b1b"),
+    }
+    bg, fg = styles.get(label, ("#f3f4f6", "#111827"))
+    return f"<span style='background:{bg};color:{fg};padding:6px 10px;border-radius:999px;font-size:14px;font-weight:700;'>{label}</span>"
+
+
 def render_task_card(task):
-    priority_color = {
+    color = {
         "high": "#ef4444",
         "medium": "#f59e0b",
         "low": "#9ca3af",
@@ -219,18 +218,22 @@ def render_task_card(task):
 
     depends_html = ""
     if depends_on:
-        depends_html = f"<div style='margin-top:8px;font-size:12px;color:#6b7280;'>Depends on: {', '.join(depends_on)}</div>"
+        depends_html = f"<div style='margin-top:10px;font-size:15px;color:#6b7280;'><strong>Depends on:</strong> {', '.join(depends_on)}</div>"
 
     blocking_html = ""
     if blocking_reason:
-        blocking_html = f"<div style='margin-top:6px;font-size:12px;color:#92400e;'>Blocked because: {blocking_reason}</div>"
+        blocking_html = f"<div style='margin-top:10px;font-size:15px;color:#92400e;'><strong>Blocked because:</strong> {blocking_reason}</div>"
 
     st.markdown(
         f"""
-<div style="border-left:6px solid {priority_color};border-radius:12px;padding:14px 16px;margin-bottom:12px;background:#ffffff;border:1px solid #e5e7eb;">
-  <div style="font-weight:700;font-size:15px;">{task.task}</div>
-  <div style="margin-top:8px;font-size:12px;color:#6b7280;">
-    status: {status} • workflow: {workflow} • source: {source} • priority: {getattr(task, "priority", "")} • urgency: {urgency}
+<div style="border-left:8px solid {color};border-radius:16px;padding:18px 18px;margin-bottom:14px;background:#ffffff;border:1px solid #e5e7eb;">
+  <div style="font-weight:800;font-size:20px;line-height:1.4;">{task.task}</div>
+  <div style="margin-top:10px;font-size:15px;color:#4b5563;">
+    <strong>Status:</strong> {status} &nbsp;&nbsp;•&nbsp;&nbsp;
+    <strong>Workflow:</strong> {workflow} &nbsp;&nbsp;•&nbsp;&nbsp;
+    <strong>Source:</strong> {source} &nbsp;&nbsp;•&nbsp;&nbsp;
+    <strong>Priority:</strong> {getattr(task, "priority", "")} &nbsp;&nbsp;•&nbsp;&nbsp;
+    <strong>Urgency:</strong> {urgency}
   </div>
   {depends_html}
   {blocking_html}
@@ -247,7 +250,7 @@ def render_list_section(title: str, items, confidence_map=None):
         return
 
     for item in items:
-        extra = ""
+        score_html = ""
         if confidence_map is not None:
             score = confidence_map.get(item, 0.0)
             if score >= 0.9:
@@ -256,13 +259,13 @@ def render_list_section(title: str, items, confidence_map=None):
                 label = "medium"
             else:
                 label = "low"
-            extra = confidence_chip(label)
+            score_html = badge_html(label)
 
         st.markdown(
             f"""
-<div style="border:1px solid #e5e7eb;border-radius:12px;padding:12px 14px;margin-bottom:8px;background:white;display:flex;justify-content:space-between;align-items:center;gap:10px;">
-  <div style="font-weight:600;font-size:14px;">{item}</div>
-  <div>{extra}</div>
+<div style="border:1px solid #e5e7eb;border-radius:14px;padding:14px 16px;margin-bottom:10px;background:white;display:flex;justify-content:space-between;align-items:center;gap:16px;">
+  <div style="font-weight:700;font-size:18px;line-height:1.4;">{item}</div>
+  <div>{score_html}</div>
 </div>
 """,
             unsafe_allow_html=True,
@@ -275,15 +278,24 @@ st.markdown(
     """
 <style>
 .block-container {
-    max-width: 1200px;
-    padding-top: 1.5rem;
-    padding-bottom: 2rem;
+    max-width: 1250px;
+    padding-top: 1.2rem;
+    padding-bottom: 3rem;
 }
 div[data-testid="stMetric"] {
     background: #ffffff;
     border: 1px solid #e5e7eb;
-    padding: 12px;
-    border-radius: 14px;
+    padding: 16px;
+    border-radius: 16px;
+}
+div[data-testid="stMetric"] label {
+    font-size: 16px !important;
+}
+div[data-testid="stMetricValue"] {
+    font-size: 28px !important;
+}
+textarea, input, select {
+    font-size: 18px !important;
 }
 </style>
 """,
@@ -295,36 +307,57 @@ if "results" not in st.session_state:
 
 sample_files = sorted([p.name for p in SAMPLES_DIR.glob("*.txt")])
 
-with st.sidebar:
-    st.header("VisaFlow")
+st.title("VisaFlow")
+st.markdown(
+    """
+### AI operations agent for international-student bureaucracy
 
-    input_mode = st.radio(
-        "Choose input type",
-        ["Demo preset", "Paste text", "Upload file", "Sample file"],
-        index=0,
+Use this app in **3 simple steps**:
+
+**Step 1:** Choose how you want to provide input  
+**Step 2:** Click **Run Workflow**  
+**Step 3:** Review the extracted requirements, task plan, and ready-to-use outputs below
+"""
+)
+
+st.divider()
+
+st.markdown("## Step 1 — Choose your input")
+
+input_mode = st.radio(
+    "How do you want to provide input?",
+    ["Demo preset", "Paste text", "Upload file", "Sample file"],
+    horizontal=True,
+)
+
+selected_preset = DEFAULT_PRESET
+pasted_text = ""
+uploaded_file = None
+selected_file = None
+
+if input_mode == "Demo preset":
+    selected_preset = st.selectbox("Choose a preset case", list(DEMO_PRESETS.keys()), index=0)
+    st.info(DEMO_PRESETS[selected_preset]["note"])
+
+elif input_mode == "Paste text":
+    pasted_text = st.text_area(
+        "Paste the full email or message here",
+        height=260,
+        placeholder="Paste the administrative email, request, or message here...",
     )
 
-    selected_preset = DEFAULT_PRESET
-    pasted_text = ""
-    uploaded_file = None
-    selected_file = None
+elif input_mode == "Upload file":
+    uploaded_file = st.file_uploader("Upload a .txt file", type=["txt"])
 
-    if input_mode == "Demo preset":
-        selected_preset = st.selectbox("Choose a preset", list(DEMO_PRESETS.keys()), index=0)
-        st.caption(DEMO_PRESETS[selected_preset]["note"])
-    elif input_mode == "Paste text":
-        pasted_text = st.text_area(
-            "Paste the email or message here",
-            height=220,
-            placeholder="Paste the full administrative email or message here...",
-        )
-    elif input_mode == "Upload file":
-        uploaded_file = st.file_uploader("Upload a .txt file", type=["txt"])
-    elif input_mode == "Sample file":
-        selected_file = st.selectbox("Choose a sample file", sample_files)
+elif input_mode == "Sample file":
+    selected_file = st.selectbox("Choose a sample file", sample_files)
 
-    run_pipeline = st.button("Run workflow", use_container_width=True)
-    clear_results = st.button("Clear results", use_container_width=True)
+st.markdown("## Step 2 — Run the workflow")
+c1, c2 = st.columns([1, 1])
+with c1:
+    run_pipeline = st.button("Run Workflow", use_container_width=True)
+with c2:
+    clear_results = st.button("Clear Results", use_container_width=True)
 
 if clear_results:
     st.session_state.results = None
@@ -349,13 +382,13 @@ if run_pipeline:
     else:
         st.session_state.results = run_pipeline_from_text(source_text)
 
-st.title("VisaFlow")
-st.write("Turn administrative messages into structured workflow support.")
-
 results = st.session_state.results
 
+st.divider()
+st.markdown("## Step 3 — Review the results")
+
 if results is None:
-    st.info("Choose an input type on the left, then click Run workflow.")
+    st.info("No results yet. Choose an input above and click Run Workflow.")
 else:
     extracted = results["extracted"]
     plan = results["plan"]
@@ -369,9 +402,9 @@ else:
 
     st.markdown(
         f"""
-<div style="border:1px solid #dbeafe;border-radius:14px;padding:14px 16px;background:#eff6ff;margin-bottom:14px;">
-  <div style="font-size:12px;color:#1d4ed8;margin-bottom:6px;">Next best action</div>
-  <div style="font-size:16px;font-weight:700;color:#1e3a8a;">{results["recommended_next_action"]}</div>
+<div style="border:1px solid #dbeafe;border-radius:16px;padding:18px 20px;background:#eff6ff;margin-bottom:16px;">
+  <div style="font-size:15px;color:#1d4ed8;margin-bottom:8px;font-weight:700;">Next Best Action</div>
+  <div style="font-size:24px;font-weight:800;color:#1e3a8a;line-height:1.4;">{results["recommended_next_action"]}</div>
 </div>
 """,
         unsafe_allow_html=True,
@@ -379,9 +412,9 @@ else:
 
     st.markdown(
         f"""
-<div style="border:1px solid #e5e7eb;border-radius:14px;padding:14px 16px;background:#ffffff;margin-bottom:14px;">
-  <div style="font-size:12px;color:#6b7280;margin-bottom:6px;">Overall system confidence</div>
-  <div style="font-size:16px;font-weight:700;color:#111827;">{case_confidence_label} ({case_confidence_score:.2f})</div>
+<div style="border:1px solid #e5e7eb;border-radius:16px;padding:18px 20px;background:#ffffff;margin-bottom:16px;">
+  <div style="font-size:15px;color:#6b7280;margin-bottom:8px;font-weight:700;">Overall System Confidence</div>
+  <div style="font-size:24px;font-weight:800;color:#111827;line-height:1.4;">{case_confidence_label} ({case_confidence_score:.2f})</div>
 </div>
 """,
         unsafe_allow_html=True,
@@ -395,8 +428,8 @@ else:
 
     st.divider()
 
-    st.subheader("Input")
-    st.text_area("Source text", results["source_text"], height=220)
+    st.markdown("### Original Input")
+    st.text_area("Source text", results["source_text"], height=240)
 
     st.divider()
 
@@ -410,7 +443,7 @@ else:
 
     st.divider()
 
-    st.subheader("Task Plan")
+    st.markdown("### Task Plan")
     if not plan.tasks:
         st.info("No task plan was generated from this input.")
     else:
@@ -419,13 +452,13 @@ else:
 
     st.divider()
 
-    st.subheader("Outputs")
+    st.markdown("### Outputs")
     tab1, tab2, tab3, tab4, tab5, tab6, tab7 = st.tabs(
         [
             "Short Summary",
-            "Email-Ready Reply",
+            "Email Reply",
             "Task Digest",
-            "Summary",
+            "Full Summary",
             "Enhanced Draft",
             "Checklist",
             "Operations Handoff",
@@ -433,29 +466,29 @@ else:
     )
 
     with tab1:
-        text = st.text_area("Short Summary", results["short_summary"], height=220)
-        st.download_button("Export short summary", text, "visaflow_short_summary_export.txt", "text/plain")
+        value = st.text_area("Short Summary", results["short_summary"], height=300)
+        st.download_button("Export Short Summary", value, "visaflow_short_summary_export.txt", "text/plain")
 
     with tab2:
-        text = st.text_area("Email-Ready Reply", results["email_ready_reply"], height=260)
-        st.download_button("Export email-ready reply", text, "visaflow_email_ready_reply_export.txt", "text/plain")
+        value = st.text_area("Email Reply", results["email_ready_reply"], height=340)
+        st.download_button("Export Email Reply", value, "visaflow_email_ready_reply_export.txt", "text/plain")
 
     with tab3:
-        text = st.text_area("Task Digest", results["task_digest"], height=260)
-        st.download_button("Export task digest", text, "visaflow_task_digest_export.txt", "text/plain")
+        value = st.text_area("Task Digest", results["task_digest"], height=340)
+        st.download_button("Export Task Digest", value, "visaflow_task_digest_export.txt", "text/plain")
 
     with tab4:
-        text = st.text_area("Summary", results["summary"], height=280)
-        st.download_button("Export summary", text, "visaflow_summary_export.txt", "text/plain")
+        value = st.text_area("Full Summary", results["summary"], height=340)
+        st.download_button("Export Full Summary", value, "visaflow_summary_export.txt", "text/plain")
 
     with tab5:
-        text = st.text_area("Enhanced Draft", results["enhanced_draft"], height=320)
-        st.download_button("Export enhanced draft", text, "visaflow_enhanced_draft_export.txt", "text/plain")
+        value = st.text_area("Enhanced Draft", results["enhanced_draft"], height=380)
+        st.download_button("Export Enhanced Draft", value, "visaflow_enhanced_draft_export.txt", "text/plain")
 
     with tab6:
-        text = st.text_area("Checklist", results["checklist"], height=320)
-        st.download_button("Export checklist", text, "visaflow_checklist_export.txt", "text/plain")
+        value = st.text_area("Checklist", results["checklist"], height=380)
+        st.download_button("Export Checklist", value, "visaflow_checklist_export.txt", "text/plain")
 
     with tab7:
-        text = st.text_area("Operations Handoff", results["ops_handoff"], height=320)
-        st.download_button("Export operations handoff", text, "visaflow_operations_handoff_export.txt", "text/plain")
+        value = st.text_area("Operations Handoff", results["ops_handoff"], height=380)
+        st.download_button("Export Operations Handoff", value, "visaflow_operations_handoff_export.txt", "text/plain")
