@@ -194,7 +194,7 @@ interface Question {
 const QUESTIONS: Question[] = [
   { id: "name", question: "What's your name?", placeholder: "e.g. Alex", type: "text" },
   { id: "university", question: "Which university do you attend?", placeholder: "Search universities...", type: "searchdrop", options: UNIVERSITIES },
-  { id: "major", question: "What's your major?", placeholder: "Search majors...", type: "searchdrop", options: MAJORS },
+  { id: "major", question: "What's your major?", placeholder: "e.g. Computer Science, Economics, Biology...", type: "text" },
   { id: "year", question: "What year are you currently in?", placeholder: "", type: "select",
     options: ["Incoming freshman","Freshman","Sophomore","Junior","Senior"] },
   { id: "targetGrad", question: "When do you want to graduate?", placeholder: "e.g. Spring 2028 or June 2028", type: "text" },
