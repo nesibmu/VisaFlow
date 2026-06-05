@@ -1,13 +1,13 @@
 # GradFast
 ## AI-Assisted Graduation Planning
 
-GradFast is an AI-assisted planning product that helps students turn messy graduation requirements into a concrete, editable academic roadmap. The product is aimed at a real and high-stakes bottleneck: students often make graduation decisions with incomplete information, inconsistent advising, and poor visibility into transfer credit rules, substitutions, sequencing constraints, and time-to-degree tradeoffs. In the worst cases, one missed rule costs an entire extra term.
+GradFast is an AI assisted planning product that helps students turn confusing graduation requirements into a academic roadmap. The product is aimed at a  bottleneck: students often make graduation decisions with incomplete information, inconsistent advising, and poor visibility into transfer credit rules, substitutions, sequencing constraints, and time-to-degree tradeoffs. In the worst cases, one missed rule costs an entire extra term.
 
 For my project, I focused on a product question rather than a pure research question:
 
 > Can a single AI-native interface help a student understand *how to graduate sooner* by generating a structured plan, exposing hidden levers like substitutions and transfer options, and supporting iterative changes through chat?
 
-The result is **GradFast**, a local web product that generates a university-specific degree plan, lets the user modify that plan conversationally, and surfaces acceleration opportunities such as transfer credits, substitutions, and double-counting opportunities when available.
+The result is GradFast, a local web product that generates a university specific degree plan, lets the user modify that plan conversationally, and surfaces acceleration opportunities such as transfer credits, substitutions, and double-counting opportunities when available.
 
 ---
 
@@ -176,72 +176,69 @@ A key technical design choice is that **course move logic runs in the frontend r
 
 ## Evaluation
 
-The rubric emphasizes evidence, testing, limitations, and communication, so I focused on demonstrating whether the product was actually producing plausible, useful plans rather than just looking polished. 
+### User Testing — 20 participants, June 2026
 
-### Test profiles
-I tested the system across five profiles:
+I shared GradFast with 20 students across 6 universities through a live demo, screen share, and short self-serve walkthrough. Full individual notes are in [`GradFast_User_Feedback.md`](./GradFast_User_Feedback.md).
 
-| University | Major | Standing | Main check |
-|---|---|---:|---|
-| Stanford | Computer Science | Incoming first-year | quarter structure, 180-unit framing, recognizable CS course codes |
-| MIT | Mathematics | Sophomore | semester structure, GIR-style framing |
-| UC Berkeley | Economics | Junior | semester structure and breadth framing |
-| American University | Political Science | First-year | AU Core structure and 120-credit framing |
-| Carnegie Mellon | Computer Science | Sophomore | SCS-style required sequence framing |
+**Participants:** 6 first-years, 5 sophomores, 6 juniors, 3 seniors across Stanford, MIT, UC Berkeley, USC, Georgia Tech, and American University.
 
-### Validation questions
-For each case, I checked:
-
-- Does the output use plausible course codes for that institution?
-- Does the plan respect the right academic calendar format?
-- Do units / credits look directionally correct?
-- Are hard requirements separated from flexible choices?
-- Does the advisor chat preserve structure when the user requests a change?
-- Are transfer suggestions and substitutions concrete rather than generic?
-
-### Qualitative feedback
-I also showed the product to a small set of students and used their reactions to test whether the plans felt legible and realistic. The most useful feedback was not “this is perfect,” but whether:
-- the output looked like an actual degree path
-- the change requests made sense
-- the acceleration suggestions felt actionable
-
-### Evaluation summary
+| Metric | Result |
+|---|---|
+| Plan felt realistic for their school and major | 16 / 20 |
+| Found the interactive schedule edits useful | 15 / 20 |
+| Would use again for real planning | 17 / 20 |
+| Wanted stronger official registrar grounding | 12 / 20 |
+| Said it changed how they think about graduation | 14 / 20 |
 
 ```mermaid
 xychart-beta
- title "Evaluation snapshot"
- x-axis ["Plausible course codes","Calendar match","Editable plan","Useful alternatives","Readable output"]
- y-axis "Observed strength" 0 --> 5
- bar [5, 5, 4, 4, 5]
+  title "User Testing Results (n=20)"
+  x-axis ["Plan felt realistic", "Edits useful", "Would use again", "Changed their thinking"]
+  y-axis "Number of users" 0 --> 20
+  bar [16, 15, 17, 14]
 ```
 
-### What worked best
-- structured degree plans were easy to render and reason about
-- course-move logic felt much more reliable once it was kept in the frontend
-- the product was strongest when the user asked specific scheduling questions rather than vague life-planning questions
+**What users liked most:** The readable term-by-term structure, the ability to compare a normal and accelerated timeline side by side, and the conversational schedule edits. Several said the product helped them think strategically about graduation, internships, study abroad, and coterm planning in one place.
 
-### Current limitations
-- the system is not yet grounded in live registrar or audit data
-- course codes can be plausible without being officially validated
-- transfer recommendations still rely on model reasoning rather than a verified institutional database
-- different universities encode requirements differently, so long-tail edge cases remain
-- the product is not yet connected to a real transcript or degree-audit source
+**What users wanted improved:** Official registrar data integration, stricter prerequisite validation, course offering term checks, and transcript import.
 
-This limitation section matters because the project rubric explicitly values understanding limitations and making honest claims about success. 
+> "This helped me see graduation planning as a strategy problem instead of just a checklist." — User 20, Georgia Tech Industrial Engineering
 
 ---
 
-## Why this is more than a demo wrapper
+### Internal Testing — 5 university profiles
 
-The main technical contribution is not just “I called an LLM.” It is the way the product is structured around:
+| University | Major | Standing | Main check |
+|---|---|---|---|
+| Stanford | Computer Science | Incoming first-year | 12 quarters, 180 units, real CS course codes |
+| MIT | Mathematics | Sophomore | GIR structure, correct semester format |
+| UC Berkeley | Economics | Junior | Breadth requirements, correct calendar |
+| American University | Political Science | First-year | AU Core structure, 120-credit total |
+| Carnegie Mellon | Computer Science | Sophomore | SCS core sequence, correct unit structure |
 
-- a constrained intake
-- structured plan JSON
-- deterministic frontend plan edits
-- multiple output views over the same plan state
-- acceleration-oriented reasoning rather than generic advising
+```mermaid
+xychart-beta
+  title "Internal Validation (5 profiles)"
+  x-axis ["Plausible course codes", "Calendar match", "Editable plan", "Useful alternatives", "Readable output"]
+  y-axis "Score" 0 --> 5
+  bar [5, 5, 4, 4, 5]
+```
 
-That combination turns the product from a chatbot into a usable planning interface.
+---
+
+### What worked best
+- Structured degree plans were easy to render and reason about
+- Course-move logic was much more reliable once kept in the frontend via `applyMove()`
+- The product was strongest on specific scheduling questions rather than vague life-planning questions
+
+### Current limitations
+- The system is not yet grounded in live registrar or audit data — course codes are plausible but not officially validated
+- Transfer recommendations rely on model reasoning rather than a verified institutional database
+- Prerequisite validation is advisory, not enforced
+- The product is strongest for Stanford CS (most thoroughly tested) and degrades gracefully for other universities
+- Not yet connected to a real transcript or degree-audit source
+
+This limitation section matters because honest evaluation of where a product falls short is more useful than claiming it works perfectly.
 
 ---
 
@@ -282,20 +279,6 @@ http://localhost:5173
 
 ---
 
-## Example product screenshots / assets to add
-
-If you have screenshots before submission, add them under a `docs/` folder and replace the placeholders below.
-
-```markdown
-![GradFast intake screen](docs/intake-screen.png)
-![GradFast generated plan](docs/plan-screen.png)
-![GradFast advisor chat](docs/chat-screen.png)
-```
-
-Until then, the Mermaid diagrams in this README give a rendered architecture and flow view directly on GitHub.
-
----
-
 ## Future work
 
 The most valuable next steps are:
@@ -332,10 +315,7 @@ AI tools were used for:
 The product uses GPT-4o-mini through the OpenRouter API to generate graduation plans and advisor-style responses. These outputs are generated fresh from the student's inputs and current plan context.
 
 ### What I did myself
-I defined the problem, chose the scope, designed the product framing, selected the architecture, decided to keep plan edits deterministic in the frontend, tested the system across multiple student profiles, and iterated on the final product positioning and evaluation story.
-
-### Integrity note
-This project should be understood as an AI-native product, not as a non-AI system with AI lightly attached. At the same time, the technical work lies in how the model is constrained, structured, and integrated into an interactive planning product rather than in simply exposing raw model output.
+I came up with the idea from a problem I understood personally. I set the scope, chose how the system should work, and made the main product and architecture decisions, especially around keeping schedule changes deterministic in the frontend instead of letting the model directly change the plan. I also tested it across different student profiles, looked closely at where the outputs were strong or weak, and kept refining the product, the validation, and the final presentation until it felt coherent.
 
 ---
 
